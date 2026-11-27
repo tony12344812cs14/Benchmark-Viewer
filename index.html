@@ -239,6 +239,15 @@ dialog#mDlg{margin:0 0 0 auto;height:100vh;max-height:100vh;width:min(420px,100v
 #mDlg ol.src{margin:0;padding-left:1.4em;font-size:14px;line-height:1.9}#mDlg ol.src a{color:var(--ink);text-underline-offset:3px}
 #mDlg table{width:100%;font-size:13.5px}#mDlg .foot{font-size:12px;color:var(--mut);margin-top:22px}
 .t1 .ext{display:block;color:var(--ink);text-underline-offset:3px;white-space:nowrap}.t1 td{vertical-align:top}.t1 th,.t1 td:nth-child(3),.t1 td:nth-child(4){white-space:nowrap}
+#gate{position:fixed;inset:0;z-index:2000;background:var(--bg);display:grid;grid-template-rows:auto 1fr auto;padding:clamp(18px,4vw,48px);cursor:pointer;transition:transform .5s cubic-bezier(.7,0,.2,1)}
+#gate.out{transform:translateY(-100%)}
+#gate .gk{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--acc)}
+#gate h2{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5vw,56px);margin:6px 0 0;letter-spacing:.02em;opacity:0;transform:translateY(8px);transition:opacity .5s .1s,transform .5s .1s}
+#gate.in h2,#gate.in .gs{opacity:1;transform:none}
+#gate .gs{font-size:14px;color:var(--mut);margin:8px 0 0;opacity:0;transform:translateY(8px);transition:opacity .5s .3s,transform .5s .3s}
+#gate svg{width:100%;height:100%;min-height:0;align-self:center}
+#gate .gf{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--mut);border-top:1.5px solid var(--ink);padding-top:10px}
+#gate text{font-family:var(--mono);font-size:13px;fill:var(--mut)}#gate text.on{fill:var(--acc);font-weight:600}
 .note2{font-size:12.5px;color:var(--mut);margin:8px 0 0;max-width:80ch}
 .rawb{margin-top:4px;display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--blue);min-height:28px;white-space:nowrap}
 .rawb:hover{border-color:var(--blue)}
@@ -405,6 +414,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
     <h4>名詞解釋</h4>
     <dl>
       <dt>模型名稱</dt><dd>點表格中的模型名稱，右側會打開模型簡介：開發者、發布時間、參數量，以及 model card、技術報告等官方連結。</dd>
+      <dt>進場動畫</dt><dd>從首頁進入資料集時會播放約 3 秒的 routing 動畫，點一下或按任意鍵可略過；系統設定「減少動態效果」時不播放。</dd>
       <dt>難度</dt><dd>依答對的模型比例分級：難 ≤ 1/3、中 1/3–2/3、易 ≥ 2/3。</dd>
       <dt>本題成本</dt><dd>官方紀錄的這一題 API 費用（美元）。</dd>
       <dt>成本倍數</dt><dd>本題成本 ÷ 這題最便宜模型的成本，最便宜為 1×。</dd>
@@ -726,7 +736,7 @@ async function init(){
 function parseHash(){const h=decodeURIComponent(location.hash.slice(1));const i=h.indexOf('~');return i<0?[h,null]:[h.slice(0,i),h.slice(i+1)]}
 function route(){const[k,id]=parseHash();
   if(!MAN)return;
-  if(MAN.datasets.some(d=>d.key===k)){if(k!==CUR||!D)loadKey(k,id);else if(id!=null&&String(view[pos]?.id)!==id){const j=view.findIndex(it=>String(it.id)===id);if(j>=0){pos=j;render()}}showView('viewer')}
+  if(MAN.datasets.some(d=>d.key===k)){if(lastView==='home')playGate(MAN.datasets.find(d=>d.key===k));if(k!==CUR||!D)loadKey(k,id);else if(id!=null&&String(view[pos]?.id)!==id){const j=view.findIndex(it=>String(it.id)===id);if(j>=0){pos=j;render()}}showView('viewer')}
   else{showView('home');setCrumb(null)}}
 $('dsSel').onchange=()=>{location.hash=$('dsSel').value};
 addEventListener('hashchange',route);
@@ -764,7 +774,37 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('filters').hidden&&!docum
   else if(e.key==='/'){e.preventDefault();toggleFilters(true);$('q').focus()}});
 
 /* ---------- navigation, home, help, filters ---------- */
-function showView(v){const home=v==='home';$('home').hidden=!home;$('main').hidden=home;$('tools').hidden=home;
+let lastView=null,gateT=[];
+function closeGate(){const g=$('gate');if(!g)return;gateT.forEach(clearTimeout);gateT=[];g.classList.add('out');setTimeout(()=>g.remove(),520)}
+function playGate(e){
+  if($('gate')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  let ms=e.summary?Object.keys(e.summary):Object.keys(MI).filter(m=>MI[m].bench==='RouterBench');if(!ms.length)return;
+  let best=-1;if(e.summary){let b=-1;ms.forEach((m,i)=>{const a=e.summary[m]?.acc;if(a!=null&&a>b){b=a;best=i}})}else best=Math.floor(Math.random()*ms.length);
+  const W=1000,Hh=520,n=ms.length,y=i=>n===1?Hh/2:40+i*(Hh-80)/(n-1),S='http://www.w3.org/2000/svg';
+  const g=document.createElement('div');g.id='gate';g.setAttribute('role','status');
+  g.innerHTML=`<div><div class="gk">§0　ENTERING ROUTING</div><h2>歡迎進入 Routing 聖域</h2><p class="gs">一題一個決定：交給哪個模型回答，要花多少成本。</p></div>
+  <svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <text x="40" y="${Hh/2-16}">query</text><circle cx="60" cy="${Hh/2}" r="5" fill="var(--ink)"/>
+  <path class="gl" d="M60 ${Hh/2}H330" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+  <rect x="322" y="${Hh/2-9}" width="18" height="18" transform="rotate(45 331 ${Hh/2})" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.5"/><text x="331" y="${Hh/2+38}" text-anchor="middle">router</text>
+  ${ms.map((m,i)=>`<path class="gl gb" data-i="${i}" d="M344 ${Hh/2}C470 ${Hh/2} 500 ${y(i)} 640 ${y(i)}" fill="none" stroke="var(--line)" stroke-width="1"/><text data-i="${i}" x="652" y="${y(i)+4}" opacity="0">${esc(short(ms[i]))}</text>`).join('')}
+  <circle id="gateDot" r="6" fill="var(--acc)" cx="60" cy="${Hh/2}" opacity="0"/></svg>
+  <div class="gf"><span>${esc(e.name)}${e.n?'　·　'+Number(e.n).toLocaleString()+' 題':''}　·　${n} 個模型</span><span>點一下略過</span></div>`;
+  document.body.appendChild(g);g.onclick=closeGate;
+  const later=(f,t)=>gateT.push(setTimeout(f,t));
+  requestAnimationFrame(()=>g.classList.add('in'));
+  const draw=(p,delay,dur)=>{const L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;p.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:dur,delay,fill:'forwards',easing:'cubic-bezier(.4,0,.2,1)'})};
+  const trunk=g.querySelector('path.gl'),br=[...g.querySelectorAll('path.gb')],tx=[...g.querySelectorAll('text[data-i]')];
+  draw(trunk,250,350);br.forEach((p,i)=>{draw(p,600+i*30,420);tx[i].animate([{opacity:0},{opacity:1}],{duration:250,delay:900+i*30,fill:'forwards'})});
+  const t0=1100+n*30;
+  later(()=>{const dot=$('gateDot');if(!dot)return;dot.setAttribute('opacity',1);const a=trunk,b=br[best],La=a.getTotalLength(),Lb=b.getTotalLength(),T=650,s=performance.now();
+    b.style.stroke='var(--acc)';b.style.strokeWidth=2;b.parentNode.insertBefore(b,dot);const L=Lb;b.style.strokeDasharray=L;b.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:T*Lb/(La+Lb),delay:T*La/(La+Lb),fill:'both'});b.style.strokeDashoffset=L;
+    (function step(now){if(!dot.isConnected)return;const k=Math.min(1,(now-s)/T),e2=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,d=e2*(La+Lb),pt=d<La?a.getPointAtLength(d):b.getPointAtLength(d-La);dot.setAttribute('cx',pt.x);dot.setAttribute('cy',pt.y);
+      if(k<1)requestAnimationFrame(step);else{tx[best].classList.add('on');tx[best].textContent+=e.summary?'　← 這個資料集答對率最高':''}})(s)},t0);
+  later(closeGate,t0+1900);
+}
+addEventListener('keydown',e=>{if($('gate')){e.stopImmediatePropagation();closeGate()}},true);
+function showView(v){const home=v==='home';lastView=v;$('home').hidden=!home;$('main').hidden=home;$('tools').hidden=home;
   if(home){$('filters').hidden=true;$('chips').hidden=true}document.title=home?'LLM Benchmark 逐題瀏覽':`${curEntry()?.name||''} · LLM Benchmark 逐題瀏覽`}
 function setCrumb(e){$('crumb').innerHTML=e?`<span class="sep">›</span><a href="#home">首頁</a><span class="sep">›</span><span>${esc(e.bench.replace(/（.*）/,''))}</span><span class="sep">›</span><strong>${esc(e.name)}</strong>`:'<span class="sep">›</span><strong>首頁</strong>'}
 const pct=v=>v==null?'–':(v*100).toFixed(1)+'%';
