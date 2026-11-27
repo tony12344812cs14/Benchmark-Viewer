@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import tarfile
 from collections import defaultdict
 
@@ -27,6 +28,8 @@ NAMES = {"aime": "AIME", "livemathbench": "LiveMathBench", "gpqa": "GPQA", "hle"
          "livecodebench": "LiveCodeBench", "mmlupro": "MMLU-Pro", "swe-bench": "SWE-Bench",
          "simpleqa": "SimpleQA", "tau2": "τ²-Bench", "arenahard": "ArenaHard"}
 LIM_Q, LIM_P, LIM_G = 6000, 1500, 1500
+LIM_RAW = 30000              # 單一完整回答的上限（字）
+RAW_BUDGET = 700_000_000     # data/raw 全部完整回答的大小上限（bytes），GitHub Pages 網站上限 1GB
 OPTLINE = re.compile(r"(?m)^\s*\(?[A-J][\.\):]\s")
 GRADE = {"A": "判定正確", "B": "判定錯誤", "C": "未作答"}
 
@@ -42,6 +45,48 @@ def s(v):
 def trim(t, n):
     t = s(t)
     return t if len(t) <= n else t[:n] + f"\n…（已截斷，原長 {len(t)} 字）"
+
+
+def safe(x):
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", str(x))
+
+
+def chunk_of(sid):
+    """完整回答分片：數字 id 每 50 題一片，其他 id 依字元碼總和分 64 片（網頁端用同樣算法）。"""
+    return str(int(sid) // 50) if sid.isdigit() else "h" + str(sum(map(ord, sid)) % 64)
+
+
+def write_raw(root, mapping):
+    """mapping: {sid: text}，依 chunk 寫成 root/<chunk>.json"""
+    shutil.rmtree(root, ignore_errors=True)
+    os.makedirs(root, exist_ok=True)
+    parts = defaultdict(dict)
+    for sid, t in mapping.items():
+        parts[chunk_of(sid)][sid] = t
+    for c, d in parts.items():
+        with open(os.path.join(root, c + ".json"), "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, separators=(",", ":"))
+
+
+def dir_size(d):
+    return sum(os.path.getsize(os.path.join(a, f)) for a, _, fs in os.walk(d) for f in fs)
+
+
+def retrim_dir(d, n):
+    for a, _, fs in os.walk(d):
+        for fn in fs:
+            p = os.path.join(a, fn)
+            with open(p, encoding="utf-8") as f:
+                m = json.load(f)
+            ch = False
+            for k, v in m.items():
+                if len(v) > n + 80:
+                    o = re.search(r"原長 (\d+) 字", v[-60:])
+                    m[k] = v[:n] + f"\n…（已截斷，原長 {o.group(1) if o else len(v)} 字）"
+                    ch = True
+            if ch:
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump(m, f, ensure_ascii=False, separators=(",", ":"))
 
 
 def ts_of(name, mtime):
@@ -97,10 +142,27 @@ def main():
                                     trim(pred, LIM_P),
                                     r.get("cost"))
             best[key] = (ts, recs)
+            raws = {str(r["index"]): trim(r.get("raw_output"), LIM_RAW)
+                    for r in data.get("records", []) if r.get("raw_output")}
+            write_raw(os.path.join(args.out, "raw", f"{safe(ds)}__{sp}", safe(md)), raws)
     print(f"讀了 {n_json} 個 JSON；符合條件的 dataset/split/model 組合：{len(best)}")
     for ds in DATASETS:
         sps = sorted({sp for sp, _ in seen.get(ds, set())})
         print(f"  {ds}: splits 出現 {sps}")
+
+    raw_root = os.path.join(args.out, "raw")
+    lrb_dirs = [os.path.join(raw_root, f"{safe(ds)}__{sp}") for ds, sp, _ in best]
+    lrb_dirs = sorted(set(d for d in lrb_dirs if os.path.isdir(d)))
+    other = dir_size(raw_root) - sum(dir_size(d) for d in lrb_dirs) if os.path.isdir(raw_root) else 0
+    lim = LIM_RAW
+    total = other + sum(dir_size(d) for d in lrb_dirs)
+    print(f"完整回答（截斷上限 {lim} 字）：{total/1e6:.0f} MB（其中 RouterBench {other/1e6:.0f} MB）")
+    while total > RAW_BUDGET and lim > 1500:
+        lim //= 2
+        for d in lrb_dirs:
+            retrim_dir(d, lim)
+        total = other + sum(dir_size(d) for d in lrb_dirs)
+        print(f"  超過上限，改為每則最多 {lim} 字 → {total/1e6:.0f} MB")
 
     os.makedirs(os.path.join(args.out, "lrb"), exist_ok=True)
     groups = defaultdict(dict)
@@ -142,7 +204,8 @@ def main():
         label = NAMES.get(ds, ds) + ("" if len([k for k in groups if k[0] == ds]) == 1 else f"（{sp}）")
         entries.append({"key": f"lrb-{ds}-{sp}", "bench": "LLMRouterBench（效能-成本，13 個旗艦模型）",
                         "name": label, "file": f"data/{fn}", "n": len(items), "models": len(models),
-                        "hasCost": True, "summary": summary})
+                        "hasCost": True, "summary": summary,
+                        "raw": f"data/raw/{safe(ds)}__{sp}", "rawLimit": lim})
         print(f"  {label}: {len(items)} 題、{len(models)} 個模型、{size/1e6:.1f} MB")
 
     idx_path = os.path.join(args.out, "index.json")
@@ -151,7 +214,8 @@ def main():
         with open(os.path.join(args.out, "mmlu.json"), encoding="utf-8") as f:
             mm = json.load(f)
         old.append({"key": "mmlu", "bench": "RouterBench（11 個模型）", "name": "MMLU",
-                    "file": "data/mmlu.json", "n": len(mm["items"]), "models": len(mm["models"]), "hasCost": False})
+                    "file": "data/mmlu.json", "n": len(mm["items"]), "models": len(mm["models"]), "hasCost": False,
+                    **({"raw": "data/raw/mmlu", "rawLimit": LIM_RAW} if os.path.isdir(os.path.join(raw_root, "mmlu")) else {})})
     with open(idx_path, "w", encoding="utf-8") as f:
         json.dump({"datasets": old + entries}, f, ensure_ascii=False, indent=1)
     print(f"清單 → {idx_path}（{len(old) + len(entries)} 個資料集）")
