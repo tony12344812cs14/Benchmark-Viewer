@@ -111,6 +111,50 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 #q{min-width:180px}
 .q{overflow-wrap:anywhere}
 .loading{opacity:.55;pointer-events:none}
+.top{margin-bottom:2px}
+.brand{display:inline-flex;align-items:center;gap:8px;font-size:19px;font-weight:700;color:var(--ink);text-decoration:none;white-space:nowrap}
+.brand .logo{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--blue);color:#fff;font-size:16px}
+.crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;color:var(--mut)}
+.crumb a{color:var(--blue);text-decoration:none}.crumb a:hover{text-decoration:underline}
+.crumb .sep{opacity:.6}
+.btn.ghost{background:transparent}
+.grp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-left:10px;border-left:1px solid var(--line)}
+.jump{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--mut);white-space:nowrap}
+.jump input{width:78px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 8px;font-size:16px}
+.badge{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:6px;border-radius:10px;background:var(--blue);color:#fff;font-size:12px;padding:0 6px}
+.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut);font-weight:500}
+.filters .lt{display:inline-flex;align-items:center;gap:4px}
+.chip:empty{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chips button{border:1px solid var(--blue);background:var(--blueb);color:var(--blue);border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;min-height:32px}
+.chips button::after{content:' ×';font-weight:700}
+.info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--blueb);color:var(--blue);font-size:12px;cursor:help;font-style:normal}
+th .info{margin-left:4px;vertical-align:1px}
+.tip{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px max(2vw,14px);background:var(--blueb);font-size:15px}
+.tip span{flex:1;min-width:220px}
+.empty{text-align:center;padding:40px 10px}
+.empty h3{margin:0 0 8px;font-size:20px}.empty p{color:var(--mut);margin:0 0 16px}
+.home{max-width:1240px;margin:auto;padding:24px max(2vw,14px) 40px}
+.hero h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;margin:8px 0 10px;text-wrap:balance}
+.hero p{font-size:17px;color:var(--mut);max-width:70ch;margin:0}
+.steps{list-style:none;padding:0;margin:22px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.steps li{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.steps b{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff}
+.steps strong{display:block}.steps span{color:var(--mut);font-size:14px}
+.bench{margin-top:22px}.bench h3{font-size:18px;margin:0 0 4px}.bench>p{margin:0 0 12px;color:var(--mut);font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.dcard{display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;font:inherit;color:inherit;min-height:44px}
+.dcard:hover,.dcard:focus-visible{border-color:var(--blue);box-shadow:0 4px 16px #1f5fbf22;outline:none}
+.dcard h4{margin:0;font-size:18px}
+.dcard .meta{font-size:13px;color:var(--mut)}
+.dcard dl{margin:4px 0 0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;font-size:14px}
+.dcard dt{color:var(--mut)}.dcard dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.dcard .go{margin-top:auto;color:var(--blue);font-weight:700}
+.kbd{display:inline-block;min-width:24px;padding:1px 7px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:var(--bg);font-size:13px;text-align:center}
+#helpDlg .db h4{margin:18px 0 6px;font-size:16px}#helpDlg .db p,#helpDlg .db li{font-size:15px}
+#helpDlg dl{display:grid;grid-template-columns:minmax(110px,auto) minmax(0,1fr);gap:8px 14px;margin:0}#helpDlg dt{font-weight:700}#helpDlg dd{margin:0}
+@media(max-width:700px){.grp{padding-left:0;border-left:0}.prog{flex-basis:100%}header{position:static}.jump{flex-basis:100%}}
 .bihead{font-size:13px;font-weight:700;color:var(--blue);margin:0 0 6px}
 .zhbox{border-bottom:1px dashed var(--line);padding-bottom:14px;margin-bottom:14px}
 .birow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -133,34 +177,62 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
 </head>
 <body>
 <header>
-  <div class="row">
-    <h1>LLM Benchmark 逐題瀏覽</h1>
+  <div class="row top">
+    <a href="#home" class="brand" id="brand" title="回首頁"><span class="logo" aria-hidden="true">▦</span>LLM Benchmark 逐題瀏覽</a>
+    <nav class="crumb" id="crumb" aria-label="目前位置"></nav>
+    <span style="flex:1"></span>
+    <button class="btn ghost" id="helpBtn" title="使用說明（快捷鍵 ?）">使用說明</button>
+  </div>
+  <div class="row tools" id="tools">
     <div class="dsrow"><select id="dsSel" aria-label="資料集"></select></div>
-    <span class="chip g" id="sizeChip"></span>
-    <div class="prog"><div class="bar"><i id="progBar" style="width:0"></i></div><span id="progTxt"></span></div>
+    <div class="grp">
+      <button class="btn" id="prevBtn" title="上一題（快捷鍵 ←）">← 上一題</button>
+      <button class="btn p" id="nextBtn" title="下一題（快捷鍵 →）">下一題 →</button>
+      <button class="btn" id="randBtn" title="隨機一題（快捷鍵 R）">隨機</button>
+      <label class="jump">跳到第 <input id="jumpIn" type="number" min="1" inputmode="numeric" aria-label="跳到第幾題"> 題</label>
+    </div>
+    <div class="grp">
+      <button class="btn" id="filtBtn" aria-expanded="false" aria-controls="filters" title="依科目、難度、模型對照、關鍵字篩選（快捷鍵 /）">篩選<span class="badge" id="filtCount" hidden></span></button>
+      <button class="btn" id="biBtn" aria-pressed="false" title="題目與完整回答加上中文翻譯">中英對照</button>
+      <button class="btn" id="ovBtn" title="各模型答對率、成本與效能-成本圖">模型表現總覽</button>
+      <button class="btn" id="mapBtn" title="每題一格，依答對比例上色">題目地圖</button>
+      <button class="btn ghost" id="linkBtn" title="複製這一題的網址，打開就會直接到這題">複製連結</button>
+    </div>
+    <div class="prog"><span class="chip g" id="sizeChip"></span><div class="bar"><i id="progBar" style="width:0"></i></div><span id="progTxt"></span></div>
   </div>
-  <div class="row tools">
-    <button class="btn" id="prevBtn" title="快捷鍵 ←">上一題</button>
-    <button class="btn p" id="nextBtn" title="快捷鍵 →">下一題</button>
-    <button class="btn" id="randBtn" title="快捷鍵 R">隨機</button>
-    <button class="btn" id="mapBtn">題目總覽地圖</button>
-    <button class="btn" id="ovBtn">模型表現總覽</button>
-    <button class="btn" id="biBtn" aria-pressed="false" title="題目與完整回答加上中文翻譯">中英對照</button>
-    <button class="btn" id="loadBtn">載入 JSON</button>
+  <div class="filters" id="filters" hidden>
+    <label id="subjWrap">科目<select id="subjSel"></select></label>
+    <label><span class="lt">難度 <span class="info" tabindex="0" title="依「答對的模型比例」分級：難 ≤ 1/3、中 1/3–2/3、易 ≥ 2/3。">ⓘ</span></span>
+      <select id="diffSel">
+        <option value="all">全部難度</option>
+        <option value="none">無模型答對</option>
+        <option value="hard">難（≤ 1/3 答對）</option>
+        <option value="mid">中（1/3–2/3）</option>
+        <option value="easy">易（≥ 2/3 答對）</option>
+        <option value="all1">全部模型答對</option>
+      </select></label>
+    <label><span class="lt">模型對照 <span class="info" tabindex="0" title="只看「某個模型答錯、但至少有一個其他模型答對」的題目，用來找出該模型的弱點與可替代的模型。">ⓘ</span></span><select id="focSel"></select></label>
+    <label>關鍵字<input type="search" id="q" placeholder="題目文字或題號" aria-label="搜尋"></label>
+    <button class="btn ghost" id="clearBtn">清除篩選</button>
+    <button class="btn ghost" id="loadBtn" title="載入用轉檔腳本產生的 JSON">載入自己的 JSON</button>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
-    <select id="subjSel" aria-label="科目"></select>
-    <select id="diffSel" aria-label="難度">
-      <option value="all">全部難度</option>
-      <option value="none">無模型答對</option>
-      <option value="hard">難（≤ 1/3 答對）</option>
-      <option value="mid">中（1/3–2/3）</option>
-      <option value="easy">易（≥ 2/3 答對）</option>
-      <option value="all1">全部模型答對</option>
-    </select>
-    <select id="focSel" aria-label="模型對照"></select>
-    <input type="search" id="q" placeholder="搜尋題目 / ID" aria-label="搜尋">
   </div>
+  <div class="chips" id="chips" hidden></div>
 </header>
+<div class="tip" id="tipBar" hidden><span>第一次使用嗎？花 30 秒看一下怎麼讀這個頁面。</span><button class="btn p" id="tipHelp">看使用說明</button><button class="btn ghost" id="tipClose">知道了</button></div>
+
+<section class="home" id="home" hidden>
+  <div class="hero">
+    <h2>看清楚每個 LLM 在每一題的表現與成本</h2>
+    <p>把 benchmark 的每一題、正確答案、各模型的回答、對錯與花費放在同一頁，方便比較與分析模型路由（routing）。</p>
+  </div>
+  <ol class="steps">
+    <li><b>1</b><div><strong>選一個資料集</strong><span>點下方卡片，或用上方選單切換。</span></div></li>
+    <li><b>2</b><div><strong>逐題比較</strong><span>左邊看題目，右邊看正解、每個模型的答案、對錯與成本。</span></div></li>
+    <li><b>3</b><div><strong>深入分析</strong><span>用「篩選 › 模型對照」找某模型答錯的題，點「完整回答」看推理過程。</span></div></li>
+  </ol>
+  <div id="homeCards"></div>
+</section>
 <div class="demo" id="demoBar" hidden>找不到資料檔，目前顯示的是示範資料（自編題目、亂數對錯，非真實結果）。</div>
 
 <main id="main">
@@ -202,7 +274,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
       <div class="ch"><h2>各模型作答</h2><span class="mut" id="filtNote"></span></div>
       <div class="scroll">
       <table>
-        <thead><tr><th>模型</th><th>作答</th><th>本題</th><th class="n costCol">本題成本</th><th class="n costCol" title="本題成本 ÷ 本題最便宜模型的成本">成本倍數</th><th class="hide-s">整體答對率（目前篩選）</th></tr></thead>
+        <thead><tr><th>模型</th><th>作答</th><th>本題</th><th class="n costCol">本題成本<span class="info" tabindex="0" title="官方紀錄的這一題 API 費用（美元）。">ⓘ</span></th><th class="n costCol">成本倍數<span class="info" tabindex="0" title="本題成本 ÷ 本題最便宜模型的成本；最便宜的模型是 1×。">ⓘ</span></th><th class="hide-s">整體答對率<span class="info" tabindex="0" title="這個模型在目前篩選範圍內所有題目的平均得分。">ⓘ</span></th></tr></thead>
         <tbody id="mBody"></tbody>
       </table>
       </div>
@@ -243,6 +315,34 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
     </div>
     <h3 style="margin:24px 0 8px;font-size:18px">資料來源</h3>
     <p class="mut">RouterBench MMLU：<code>withmartian/routerbench</code>（routerbench_0shot.pkl），正解取原版 MMLU（<code>cais/mmlu</code>），依選項文字對應到 RouterBench 打亂後的字母。LLMRouterBench：<code>NPULH/LLMRouterBench</code>（bench-release.tar.gz），依官方 <code>baseline_config_performance_cost.yaml</code> 取 10 個資料集 × 13 個模型，成本為官方紀錄的每題 API 費用（美元）。題目與作答過長時會截斷。</p>
+  </div>
+</dialog>
+
+<dialog id="helpDlg">
+  <div class="dh"><h3>使用說明</h3><button class="btn" data-close>關閉</button></div>
+  <div class="db">
+    <h4>這個網站在做什麼？</h4>
+    <p>把 LLM benchmark 的每一題、正確答案、每個模型的回答、對錯和花費放在同一頁，讓你逐題比較模型，並找出「便宜模型就答得對、不必用貴模型」的題目。</p>
+    <h4>怎麼看一題</h4>
+    <ul>
+      <li><b>左邊</b>：題目與選項，綠色是正確答案。開「中英對照」可以看中文翻譯。</li>
+      <li><b>右上</b>：正確答案、幾個模型答對，以及<b>最便宜的答對模型</b>。</li>
+      <li><b>右下</b>：每個模型的答案、對錯與成本，依這題的成本由高到低排列；點「完整回答」看模型的完整推理。</li>
+    </ul>
+    <h4>名詞解釋</h4>
+    <dl>
+      <dt>難度</dt><dd>依答對的模型比例分級：難 ≤ 1/3、中 1/3–2/3、易 ≥ 2/3。</dd>
+      <dt>本題成本</dt><dd>官方紀錄的這一題 API 費用（美元）。</dd>
+      <dt>成本倍數</dt><dd>本題成本 ÷ 這題最便宜模型的成本，最便宜為 1×。</dd>
+      <dt>模型對照</dt><dd>在「篩選」裡選一個模型，只看它答錯但別的模型答對的題目。</dd>
+      <dt>整體答對率</dt><dd>模型在目前篩選範圍內的平均得分，會隨篩選改變。</dd>
+      <dt>正解來源</dt><dd>MMLU 用原版 MMLU 的官方答案；LLMRouterBench 用官方的 ground truth。</dd>
+      <dt>中英對照</dt><dd>機器翻譯，僅供參考；數學式與程式碼不翻譯。</dd>
+    </dl>
+    <h4>快捷鍵</h4>
+    <p><span class="kbd">←</span> <span class="kbd">→</span> 上一題／下一題　<span class="kbd">R</span> 隨機　<span class="kbd">/</span> 篩選與搜尋　<span class="kbd">?</span> 開啟說明　<span class="kbd">Esc</span> 關閉視窗</p>
+    <h4>資料來源</h4>
+    <p class="mut">RouterBench（withmartian/routerbench）的 MMLU，以及 LLMRouterBench（NPULH/LLMRouterBench）效能-成本設定的 10 個資料集。由 GitHub Actions 自動下載並轉檔。</p>
   </div>
 </dialog>
 
@@ -294,7 +394,7 @@ function setData(d){
   $('demoBar').hidden=!d.demo;
   const subs=[...new Set(D.items.map(i=>i.subject||'未分類'))].sort();
   $('subjSel').innerHTML='<option value="">全部科目（'+subs.length+'）</option>'+subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
-  $('subjSel').hidden=subs.length<2;
+  $('subjWrap').hidden=subs.length<2;
   const prevF=$('focSel').value||store.get('foc','');
   $('focSel').innerHTML='<option value="">模型對照：不限</option>'+D.models.map(m=>`<option value="${esc(m)}">${esc(short(m))} 答錯、其他模型答對</option>`).join('');
   $('focSel').value=D.models.includes(prevF)?prevF:'';
@@ -351,8 +451,10 @@ function render(){
   const it=view[pos];
   $('progTxt').textContent=view.length?`第 ${pos+1} / ${view.length.toLocaleString()} 題`:'沒有符合的題目';
   $('progBar').style.width=view.length?((pos+1)/view.length*100)+'%':'0';
-  if(!it){['qNo','qId','qSubj','qDiff','qTail','qRaw','qRate','qRateSub','goldSrc'].forEach(i=>$(i).textContent='');$('qText').textContent='沒有符合篩選條件的題目。';$('qOpts').innerHTML='';$('mBody').innerHTML='';$('gold').textContent='–';$('goldTxt').hidden=true;$('cheap').hidden=true;return}
+  if(!it){['qNo','qId','qSubj','qDiff','qTail','qRaw','qRate','qRateSub','goldSrc'].forEach(i=>$(i).textContent='');$('qText').innerHTML='<div class="empty"><h3>沒有符合條件的題目</h3><p>目前的篩選條件太嚴格了，試著放寬或全部清除。</p><button class="btn p" data-clear>清除所有篩選</button></div>';$('qZh').hidden=true;$('enHead').hidden=true;$('gold').className='big na';$('qBar').style.width='0';$('filtNote').textContent='';renderChips();$('qOpts').innerHTML='';$('mBody').innerHTML='';$('gold').textContent='–';$('goldTxt').hidden=true;$('cheap').hidden=true;return}
   store.set('pos_'+(CUR||''),pos);
+  $('jumpIn').value=pos+1;$('jumpIn').max=view.length;renderChips();
+  if(CUR&&CUR!=='file'){const hs='#'+CUR+'~'+encodeURIComponent(it.id);if(location.hash!==hs)history.replaceState(null,'',hs)}
   const[c,n]=count(it);const f=it._f;
   $('qNo').textContent=`第 ${pos+1} / ${view.length.toLocaleString()} 題`;
   $('qId').textContent=it.id;$('qSubj').textContent=it.subject||'未分類';
@@ -524,12 +626,15 @@ $('scCur').onclick=()=>{scMode='cur';$('scCur').setAttribute('aria-pressed','tru
 $('scAll').onclick=()=>{scMode='all';$('scAll').setAttribute('aria-pressed','true');$('scCur').setAttribute('aria-pressed','false');drawScatter()};
 
 /* ---------- loading ---------- */
-async function loadKey(key){
-  const e=MAN.datasets.find(d=>d.key===key)||MAN.datasets[0];CUR=e.key;
-  $('dsSel').value=e.key;store.set('ds',e.key);if(location.hash!=='#'+e.key)history.replaceState(null,'','#'+e.key);
+async function loadKey(key,wantId){
+  const e=MAN.datasets.find(d=>d.key===key)||MAN.datasets[0];CUR=e.key;showView('viewer');
+  $('dsSel').value=e.key;store.set('ds',e.key);setCrumb(e);
   $('main').classList.add('loading');$('sizeChip').textContent='載入中…';
   try{if(!cache[e.key]){const r=await fetch(e.file,{cache:'no-cache'});if(!r.ok)throw new Error(r.status);cache[e.key]=await r.json()}
-    $('subjSel').value='';$('diffSel').value='all';$('q').value='';setData(cache[e.key])}
+    $('subjSel').value='';$('diffSel').value='all';$('q').value='';
+    if(wantId!=null)store.set('pos_'+e.key,-1);
+    setData(cache[e.key]);
+    if(wantId!=null){const k=view.findIndex(it=>String(it.id)===String(wantId));if(k>=0){pos=k;render()}}}
   catch(err){$('sizeChip').textContent='載入失敗：'+err.message}
   $('main').classList.remove('loading');
 }
@@ -539,11 +644,15 @@ async function init(){
   if(!MAN){$('dsSel').innerHTML='<option>示範資料</option>';setData(demo());return}
   const benches=[...new Set(MAN.datasets.map(d=>d.bench))];
   $('dsSel').innerHTML=benches.map(b=>`<optgroup label="${esc(b)}">${MAN.datasets.filter(d=>d.bench===b).map(d=>`<option value="${esc(d.key)}">${esc(d.name)}${d.n?`（${Number(d.n).toLocaleString()} 題）`:''}</option>`).join('')}</optgroup>`).join('');
-  const h=decodeURIComponent(location.hash.slice(1));
-  await loadKey(MAN.datasets.some(d=>d.key===h)?h:store.get('ds',MAN.datasets[0].key));
+  renderHome();route();
 }
-$('dsSel').onchange=()=>loadKey($('dsSel').value);
-addEventListener('hashchange',()=>{const h=decodeURIComponent(location.hash.slice(1));if(MAN&&h!==CUR&&MAN.datasets.some(d=>d.key===h))loadKey(h)});
+function parseHash(){const h=decodeURIComponent(location.hash.slice(1));const i=h.indexOf('~');return i<0?[h,null]:[h.slice(0,i),h.slice(i+1)]}
+function route(){const[k,id]=parseHash();
+  if(!MAN)return;
+  if(MAN.datasets.some(d=>d.key===k)){if(k!==CUR||!D)loadKey(k,id);else if(id!=null&&String(view[pos]?.id)!==id){const j=view.findIndex(it=>String(it.id)===id);if(j>=0){pos=j;render()}}showView('viewer')}
+  else{showView('home');setCrumb(null)}}
+$('dsSel').onchange=()=>{location.hash=$('dsSel').value};
+addEventListener('hashchange',route);
 
 /* ---------- events ---------- */
 const go=d=>{if(!view.length)return;pos=(pos+d+view.length)%view.length;render()};
@@ -570,8 +679,46 @@ addEventListener('dragenter',e=>{e.preventDefault();dc++;$('drop').classList.add
 addEventListener('dragleave',()=>{if(--dc<=0){dc=0;$('drop').classList.remove('on')}});
 addEventListener('dragover',e=>e.preventDefault());
 addEventListener('drop',e=>{e.preventDefault();dc=0;$('drop').classList.remove('on');loadFile(e.dataTransfer.files[0])});
-addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea,summary')||document.querySelector('dialog[open]'))return;
-  if(e.key==='ArrowRight')go(1);else if(e.key==='ArrowLeft')go(-1);else if(e.key==='r'||e.key==='R')$('randBtn').click()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('filters').hidden&&!document.querySelector('dialog[open]')){toggleFilters(false);return}
+  if(e.target.matches('input,select,textarea,summary')||document.querySelector('dialog[open]'))return;
+  if(e.key==='?'){e.preventDefault();$('helpDlg').showModal();return}
+  if($('home').hidden===false)return;
+  if(e.key==='ArrowRight')go(1);else if(e.key==='ArrowLeft')go(-1);else if(e.key==='r'||e.key==='R')$('randBtn').click();
+  else if(e.key==='/'){e.preventDefault();toggleFilters(true);$('q').focus()}});
+
+/* ---------- navigation, home, help, filters ---------- */
+function showView(v){const home=v==='home';$('home').hidden=!home;$('main').hidden=home;$('tools').hidden=home;
+  if(home){$('filters').hidden=true;$('chips').hidden=true}document.title=home?'LLM Benchmark 逐題瀏覽':`${curEntry()?.name||''} · LLM Benchmark 逐題瀏覽`}
+function setCrumb(e){$('crumb').innerHTML=e?`<span class="sep">›</span><a href="#home">首頁</a><span class="sep">›</span><span>${esc(e.bench.replace(/（.*）/,''))}</span><span class="sep">›</span><strong>${esc(e.name)}</strong>`:'<span class="sep">›</span><strong>首頁</strong>'}
+const pct=v=>v==null?'–':(v*100).toFixed(1)+'%';
+function renderHome(){
+  const benches=[...new Set(MAN.datasets.map(d=>d.bench))];
+  const desc={RouterBench:'2023 年底的 11 個模型（GPT-4、Claude、Llama-2…）在 MMLU 上的逐題結果，正解取自原版 MMLU。',LLMRouterBench:'13 個旗艦模型（GPT-5、Claude-4、Gemini-2.5…）在 10 個資料集上的逐題結果，附每題 API 成本，適合研究效能與成本的取捨。'};
+  $('homeCards').innerHTML=benches.map(b=>{const key=Object.keys(desc).find(k=>b.startsWith(k));
+    return`<section class="bench"><h3>${esc(b)}</h3><p>${esc(desc[key]||'')}</p><div class="cards">${MAN.datasets.filter(d=>d.bench===b).map(d=>{
+      let extra='';if(d.summary){const S=Object.entries(d.summary).filter(([,v])=>v&&v.acc!=null);const best=S.sort((a,c)=>c[1].acc-a[1].acc)[0];const cheap=[...S].filter(([,v])=>v.avgCost!=null).sort((a,c)=>a[1].avgCost-c[1].avgCost)[0];
+        extra=`<dl><dt>最高答對率</dt><dd>${esc(short(best[0]))} · ${pct(best[1].acc)}</dd><dt>最省成本</dt><dd>${esc(short(cheap[0]))} · ${fmtCost(cheap[1].avgCost)}/題</dd></dl>`}
+      return`<button class="dcard" data-key="${esc(d.key)}"><h4>${esc(d.name)}</h4><span class="meta">${d.n?Number(d.n).toLocaleString()+' 題':''}${d.models?' · '+d.models+' 個模型':''}${d.hasCost?' · 含成本':''}</span>${extra}<span class="go">開始瀏覽 →</span></button>`}).join('')}</div></section>`}).join('');
+}
+$('homeCards').addEventListener('click',e=>{const c=e.target.closest('.dcard');if(c)location.hash=c.dataset.key});
+$('brand').onclick=e=>{e.preventDefault();location.hash='home'};
+function toggleFilters(open){const o=open??$('filters').hidden;$('filters').hidden=!o;$('filtBtn').setAttribute('aria-expanded',String(o))}
+$('filtBtn').onclick=()=>toggleFilters();
+function activeFilters(){if(!D)return[];const f=[];const s=$('subjSel').value,d=$('diffSel').value,m=$('focSel').value,q=$('q').value.trim();
+  if(s)f.push(['subjSel','科目：'+s]);if(d!=='all')f.push(['diffSel','難度：'+$('diffSel').selectedOptions[0].text]);if(m)f.push(['focSel',short(m)+' 答錯、他人答對']);if(q)f.push(['q','關鍵字：'+q]);return f}
+function renderChips(){const f=activeFilters();$('chips').hidden=!f.length||!$('home').hidden;$('filtCount').hidden=!f.length;$('filtCount').textContent=f.length;
+  $('chips').innerHTML=f.map(([id,t])=>`<button data-f="${id}" title="移除這個篩選">${esc(t)}</button>`).join('')+(f.length>1?'<button data-f="all">全部清除</button>':'')}
+function clearFilter(id){if(id==='all'||!id){$('subjSel').value='';$('diffSel').value='all';$('focSel').value='';$('q').value='';store.set('foc','')}
+  else if(id==='diffSel')$('diffSel').value='all';else{$(id).value='';if(id==='focSel')store.set('foc','')}applyFilter(false)}
+$('chips').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b)clearFilter(b.dataset.f)});
+$('clearBtn').onclick=()=>clearFilter('all');
+document.addEventListener('click',e=>{if(e.target.closest('[data-clear]'))clearFilter('all')});
+$('jumpIn').onchange=()=>{const n=parseInt($('jumpIn').value,10);if(view.length&&n>=1){pos=Math.min(n,view.length)-1;render()}};
+$('helpBtn').onclick=()=>$('helpDlg').showModal();
+$('linkBtn').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);$('linkBtn').textContent='已複製 ✓'}catch(e){$('linkBtn').textContent='請複製網址列'}setTimeout(()=>$('linkBtn').textContent='複製連結',1800)};
+if(!store.get('seenTip',false))$('tipBar').hidden=false;
+$('tipClose').onclick=()=>{$('tipBar').hidden=true;store.set('seenTip',true)};
+$('tipHelp').onclick=()=>{$('tipBar').hidden=true;store.set('seenTip',true);$('helpDlg').showModal()};
 
 init();
 }
