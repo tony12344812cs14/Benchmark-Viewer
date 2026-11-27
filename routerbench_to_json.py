@@ -42,6 +42,16 @@ def norm(s):
     return re.sub(r"\s+", " ", str(s)).strip().lower()
 
 
+def prompt_text(p):
+    """RouterBench 的 prompt 可能是 list（例如 ['...']），統一轉成字串。"""
+    if isinstance(p, str):
+        return p
+    try:
+        return "\n".join(str(x) for x in p)
+    except TypeError:
+        return "" if p is None else str(p)
+
+
 def load_mmlu(d):
     """回傳 {normalized question: answer letter}"""
     files = [f for f in glob.glob(os.path.join(d, "**", "*.parquet"), recursive=True) if "auxiliary" not in f]
@@ -56,7 +66,7 @@ def load_mmlu(d):
 
 def question_keys(prompt):
     """從 prompt 中取出選項之前的題目文字，回傳由長到短的候選（去掉前面可能的指示語）。"""
-    lines = str(prompt).split("\n")
+    lines = prompt_text(prompt).split("\n")
     first = next((i for i, l in enumerate(lines) if OPT_RE.match(l) and OPT_RE.match(l).group(1) == "A"), len(lines))
     head = lines[:first]
     for k in range(len(head)):
@@ -83,7 +93,7 @@ def main():
         df = df.head(args.limit)
     print("MMLU 題數：", len(df))
     if len(df):
-        print("prompt 範例：", repr(str(df["prompt"].iloc[0])[:400]))
+        print("prompt 範例：", repr(prompt_text(df["prompt"].iloc[0])[:400]))
 
     models = [c for c in df.columns if isinstance(c, str) and f"{c}|model_response" in df.columns]
     if not models:
@@ -111,7 +121,7 @@ def main():
             if votes:
                 gold, gsrc = votes.most_common(1)[0][0], "v"
         src_count[gsrc or "none"] += 1
-        items.append((str(row.get("sample_id", len(items))), row["subject"], str(row.get("prompt", "")), gold, gsrc, res, picks))
+        items.append((str(row.get("sample_id", len(items))), row["subject"], prompt_text(row.get("prompt", "")), gold, gsrc, res, picks))
     print("正解來源統計（m=原版 MMLU, v=模型多數決）：", dict(src_count))
 
     if args.verbose_json:
