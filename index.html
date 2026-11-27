@@ -92,7 +92,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 <header>
   <div class="row">
     <h1>MMLU 題目與模型答對率</h1>
-    <span class="chip b" id="srcChip">示範資料</span>
+    <span class="chip b" id="srcChip">載入中…</span>
     <span class="chip g" id="sizeChip"></span>
     <div class="prog"><div class="bar"><i id="progBar" style="width:0"></i></div><span id="progTxt"></span></div>
   </div>
@@ -116,7 +116,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
     <input type="search" id="q" placeholder="搜尋題目 / ID" aria-label="搜尋">
   </div>
 </header>
-<div class="demo" id="demoBar">目前顯示的是示範資料：題目是自編的 MMLU 風格範例，模型對錯為固定亂數產生，不是真實結果。按「載入 JSON」或把檔案拖進頁面，換成 RouterBench 的實際資料（轉檔方式見「模型答對率總覽」最下方）。</div>
+<div class="demo" id="demoBar" hidden>找不到 data/mmlu.json，目前顯示的是示範資料（自編題目、亂數對錯，非真實結果）。可按「載入 JSON」載入 RouterBench 轉出的檔案。</div>
 
 <main>
   <section class="card" id="qCard">
@@ -144,6 +144,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
         <div>
           <div class="stat" id="qRate"></div>
           <div class="mut" id="qRateSub"></div>
+          <div class="mut" id="goldSrc"></div>
           <div class="bar" style="margin-top:10px;max-width:none"><i id="qBar"></i></div>
         </div>
       </div>
@@ -180,7 +181,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
        2. 用附上的 <code>routerbench_to_json.py</code> 轉檔，再按「載入 JSON」選取輸出的檔案：</p>
     <pre class="cmd" id="cmdTxt">python routerbench_to_json.py routerbench_0shot.pkl -o mmlu_routerbench.json</pre>
     <button class="btn" id="copyCmd">複製指令</button>
-    <p class="mut">RouterBench 沒有正解欄位，正確答案是用答對模型所選字母的多數決反推；沒有任何模型答對的題目會顯示「無法反推」。JSON 格式：<code>{"models":[...], "items":[{"id","subject","prompt","gold","results":{model:0|1},"picks":{model:"A"}}]}</code></p>
+    <p class="mut">正確答案優先取原版 MMLU（cais/mmlu）的官方正解；比對不到原題時，才用答對模型所選字母的多數決反推，頁面上會標示來源。JSON 格式：<code>{"models":[...], "items":[{"id","subject","prompt","gold","results":{model:0|1},"picks":{model:"A"}}]}</code></p>
   </div>
 </dialog>
 
@@ -225,8 +226,15 @@ function count(it){let c=0,n=0;for(const m of D.models){const v=it.results[m];if
 function color(f){if(f==null)return'#9aa3ad';const st=[[0,[198,59,48]],[.33,[232,163,58]],[.66,[205,191,60]],[1,[23,138,76]]];
   for(let i=1;i<st.length;i++)if(f<=st[i][0]){const[a,ca]=st[i-1],[b,cb]=st[i];const t=(f-a)/(b-a);return`rgb(${ca.map((v,k)=>Math.round(v+(cb[k]-v)*t)).join(',')})`}return'#178a4c'}
 
+function expand(d){
+  const M=d.models,S=d.subjects||[];
+  return {source:d.source,models:M,items:d.items.map(([id,si,prompt,gold,gs,rs,ps])=>{const results={},picks={};
+    M.forEach((m,j)=>{const r=rs[j];results[m]=r==='1'?1:r==='0'?0:null;const p=ps[j];picks[m]=p&&p!=='-'?p:null});
+    return{id,subject:S[si]??String(si),prompt,gold:gold||null,goldSrc:gs,results,picks}})};
+}
 function setData(d){
   if(!d||!Array.isArray(d.items)||!Array.isArray(d.models))throw new Error('格式不符：需要 models 與 items');
+  if(d.format==='compact-v1')d=expand(d);
   d.items.forEach(it=>{it.results=it.results||{};it.picks=it.picks||{};it._f=null});
   D=d;D.items.forEach(it=>it._f=frac(it));
   $('srcChip').textContent=d.source||'自訂資料';
@@ -279,6 +287,7 @@ function render(){
   $('qRate').textContent=n?`${c} / ${n} 個模型答對`:'無作答資料';
   $('qRateSub').textContent=n?`本題答對率 ${(c/n*100).toFixed(0)}%`+(it.gold?'':'（沒有模型答對，正解無法從資料反推）'):'';
   $('qBar').style.width=n?(c/n*100)+'%':'0';
+  $('goldSrc').textContent=it.goldSrc==='m'?'正解來源：原版 MMLU（cais/mmlu）':it.goldSrc==='v'?'正解來源：由答對模型的選擇反推（未比對到原版題目）':'';
   const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
   $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];const pk=it.picks[m];
@@ -334,7 +343,10 @@ addEventListener('drop',e=>{e.preventDefault();dc=0;$('drop').classList.remove('
 addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
   if(e.key==='ArrowRight')go(1);else if(e.key==='ArrowLeft')go(-1);else if(e.key==='r'||e.key==='R')$('randBtn').click()});
 
-setData(demo());
+(async()=>{
+  try{const r=await fetch('data/mmlu.json',{cache:'no-cache'});if(!r.ok)throw 0;$('srcChip').textContent='下載真實資料中…';setData(await r.json())}
+  catch(e){setData(demo())}
+})();
 }
 </script>
 </body>
