@@ -419,7 +419,11 @@ async function trInit(){
   if(trProv)return trProv;if(trBusy)return trBusy;
   trBusy=(async()=>{
     try{if('Translator' in self){const a=await Translator.availability({sourceLanguage:'en',targetLanguage:'zh-Hant'});
-      if(a!=='unavailable'){trObj=await Translator.create({sourceLanguage:'en',targetLanguage:'zh-Hant',monitor(mo){mo.addEventListener('downloadprogress',e=>{const b=$('qZh');if(b)b.innerHTML=`<p class="mut">下載 Chrome 翻譯模型中… ${Math.round(e.loaded*100)}%</p>`})}});return trProv='chrome'}}}catch(e){}
+      if(a==='available'||a==='downloadable'||a==='downloading'){
+        const cr=Translator.create({sourceLanguage:'en',targetLanguage:'zh-Hant',monitor(mo){mo.addEventListener('downloadprogress',e=>{const b=$('qZh');if(b)b.innerHTML=`<p class="mut">下載 Chrome 翻譯模型中… ${Math.round(e.loaded*100)}%</p>`})}});
+        trObj=await Promise.race([cr,new Promise(r=>setTimeout(()=>r(null),a==='available'?15000:6000))]);
+        if(trObj)return trProv='chrome';
+        cr.then(o=>{if(o&&trProv==='google'){trObj=o}}).catch(()=>{})}}}catch(e){}
     return trProv='google'})();
   return trBusy}
 async function trRaw(t){
