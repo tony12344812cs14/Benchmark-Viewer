@@ -18,6 +18,7 @@ import glob
 import json
 import os
 import re
+import shutil
 from collections import Counter
 
 import pandas as pd
@@ -37,6 +38,14 @@ def extract_letter(resp):
         return m.group(1)
     m = re.search(r"\b([A-D])\b", s)
     return m.group(1) if m else None
+
+
+def safe(x):
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", str(x))
+
+
+def chunk_of(sid):
+    return str(int(sid) // 50) if sid.isdigit() else "h" + str(sum(map(ord, sid)) % 64)
 
 
 def norm(s):
@@ -124,6 +133,7 @@ def main():
     subjects = sorted(df["subject"].unique())
     sidx = {s: i for i, s in enumerate(subjects)}
     items = []
+    raws = {m: {} for m in models}
     for _, row in df.iterrows():
         res, picks = [], []
         for m in models:
@@ -147,7 +157,12 @@ def main():
             for p, r in zip(picks, res):
                 if r is not None and p:
                     agree[(r == 1) == (p == gold)] += 1
-        items.append((str(row.get("sample_id", len(items))), row["subject"], prompt_text(row.get("prompt", "")), gold, gsrc, res, picks))
+        sid = str(row.get("sample_id", len(items)))
+        for m in models:
+            t = row.get(f"{m}|model_response")
+            if isinstance(t, str) and t.strip():
+                raws[m][sid] = t if len(t) <= 30000 else t[:30000] + f"\n…（已截斷，原長 {len(t)} 字）"
+        items.append((sid, row["subject"], prompt_text(row.get("prompt", "")), gold, gsrc, res, picks))
     print("正解來源統計（m=原版 MMLU, v=模型多數決）：", dict(src_count))
     tot = sum(agree.values())
     if tot:
@@ -168,6 +183,18 @@ def main():
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     print(f"輸出 {len(items)} 題、{len(models)} 個模型 → {args.out}（{os.path.getsize(args.out)/1e6:.1f} MB）")
+    if not args.verbose_json:  # 完整回答分片：<out 所在資料夾>/raw/mmlu/<model>/<chunk>.json
+        root = os.path.join(os.path.dirname(args.out) or ".", "raw", "mmlu")
+        shutil.rmtree(root, ignore_errors=True)
+        for m, mp in raws.items():
+            parts = {}
+            for sid, t in mp.items():
+                parts.setdefault(chunk_of(sid), {})[sid] = t
+            os.makedirs(os.path.join(root, safe(m)), exist_ok=True)
+            for c, d in parts.items():
+                with open(os.path.join(root, safe(m), c + ".json"), "w", encoding="utf-8") as f:
+                    json.dump(d, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"完整回答 → {root}")
 
 
 if __name__ == "__main__":
