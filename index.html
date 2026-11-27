@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MMLU 答對率瀏覽</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a researcher's annotation console, calm and exact, same family as the 難度評估介面
+   IDEA: an exam paper on the left, the grading sheet (answer key + every model's mark) on the right
+   PICTURE: the question card with the key option lit green, the model scoreboard beside it
+   COLOUR and TYPE: white cards on cool grey, NYCU-ish blue for chips, green = correct, red = wrong; Noto Sans TC
+   LAYOUT: header + toolbar, two columns (question | answer + models), modals for map and overview */
+:root{color-scheme:light dark;
+--bg:light-dark(#f3f5f8,#0f1318);--card:light-dark(#fff,#181d24);--ink:light-dark(#1d2330,#e6e9ee);--mut:light-dark(#667085,#98a2b3);
+--line:light-dark(#e1e5eb,#2a313b);--blue:light-dark(#1f5fbf,#7aa7ee);--blueb:light-dark(#e8f0fc,#1b2a42);
+--ok:light-dark(#178a4c,#4cc98a);--okb:light-dark(#e6f6ed,#16301f);--bad:light-dark(#c63b30,#f07a70);--badb:light-dark(#fdecea,#3a1d1b)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Noto Sans TC",system-ui,sans-serif;overflow-x:clip}
+button,select,input{font:inherit;color:inherit}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:12px max(2vw,14px);position:sticky;top:0;z-index:5}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+h1{font-size:20px;margin:0 6px 0 0;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:14px;white-space:nowrap;background:var(--card)}
+.chip.b{background:var(--blueb);color:var(--blue);border-color:transparent;font-weight:500}
+.chip.g{background:var(--okb);color:var(--ok);border-color:transparent;font-weight:500}
+.chip.w{background:light-dark(#fff6e0,#3a2f12);color:light-dark(#8a5a00,#f3c75c);border-color:transparent}
+.prog{flex:1 1 180px;display:flex;align-items:center;gap:10px;justify-content:flex-end;font-weight:700;white-space:nowrap}
+.bar{height:8px;border-radius:9px;background:var(--line);overflow:hidden;flex:1;max-width:420px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--ok))}
+.tools{margin-top:10px}
+.btn{min-height:44px;padding:0 16px;border:1px solid var(--line);background:var(--card);border-radius:10px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--blue)}.btn:focus-visible,select:focus-visible,input:focus-visible,.cell:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.btn.p{background:var(--blue);color:#fff;border-color:var(--blue)}
+select,input[type=search]{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 10px;font-size:16px}
+main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;padding:18px max(2vw,14px);max-width:1500px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.ch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.ch h2{font-size:22px;margin:0 4px 0 0}
+.cb{padding:18px 22px}
+.q{white-space:pre-wrap;font-size:var(--fs,17px)}
+.opts{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}
+.opts li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:var(--fs,17px)}
+.opts li b{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--bg);font-size:15px}
+.opts li.gold{border-color:var(--ok);background:var(--okb)}.opts li.gold b{background:var(--ok);color:#fff}
+.opts small{color:var(--mut);white-space:nowrap;font-size:13px;padding-top:4px}
+.tail{color:var(--mut);font-size:14px;margin-top:10px;white-space:pre-wrap}
+details.raw{margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+details.raw summary{color:var(--blue);cursor:pointer;font-weight:500}
+details.raw pre{white-space:pre-wrap;font-size:14px;margin:8px 0 0}
+.side{display:grid;gap:18px;align-content:start}
+.key{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+.big{width:84px;height:84px;border-radius:18px;display:grid;place-items:center;font-size:48px;font-weight:700;background:var(--ok);color:#fff}
+.big.na{background:var(--line);color:var(--mut);font-size:20px}
+.stat{font-size:clamp(28px,4vw,40px);font-weight:700;line-height:1.1}
+.mut{color:var(--mut);font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:13px;color:var(--mut);font-weight:500}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mk{display:inline-grid;place-items:center;min-width:52px;padding:2px 8px;border-radius:8px;font-weight:700;font-size:14px;white-space:nowrap}
+.mk.y{background:var(--okb);color:var(--ok)}.mk.x{background:var(--badb);color:var(--bad)}.mk.u{background:var(--bg);color:var(--mut)}
+.hb{display:flex;align-items:center;gap:8px;min-width:120px}.hb span{flex:1;height:8px;background:var(--bg);border-radius:9px;overflow:hidden}.hb span i{display:block;height:100%;background:var(--blue)}
+.mname{font-weight:500;overflow-wrap:anywhere}
+.note{font-size:13px;color:var(--mut);padding:10px 18px 14px}
+.drop{position:fixed;inset:0;background:color-mix(in srgb,var(--blue) 20%,transparent);display:none;place-items:center;font-size:24px;font-weight:700;z-index:30;border:4px dashed var(--blue)}
+.drop.on{display:grid}
+dialog{border:0;border-radius:16px;padding:0;width:min(1100px,94vw);max-height:88vh;background:var(--card);color:var(--ink);box-shadow:0 20px 60px #0005}
+dialog::backdrop{background:#0007}
+.dh{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:1}
+.dh h3{margin:0;font-size:20px}
+.db{padding:16px 18px;overflow:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(18px,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:3px;border:0;padding:0;cursor:pointer}
+.cell.cur{outline:2px solid var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px;font-size:14px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.scroll{overflow-x:auto}
+.hm td{text-align:center;font-size:13px;font-variant-numeric:tabular-nums;padding:6px 4px;white-space:nowrap}
+.hm th{white-space:nowrap;font-size:12px}
+.hm td.s{text-align:left;font-size:13px;white-space:nowrap}
+code{background:var(--bg);padding:2px 6px;border-radius:6px;overflow-wrap:anywhere;font-size:14px}
+pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;font-size:14px}
+.demo{background:light-dark(#fff6e0,#2e2510);color:light-dark(#7a5000,#f3c75c);padding:8px max(2vw,14px);font-size:14px}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.prog{justify-content:flex-start}}
+@media(max-width:600px){h1{font-size:18px}.ch h2{font-size:19px}.cb{padding:14px}.big{width:64px;height:64px;font-size:36px}.hide-s{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1>MMLU 題目與模型答對率</h1>
+    <span class="chip b" id="srcChip">示範資料</span>
+    <span class="chip g" id="sizeChip"></span>
+    <div class="prog"><div class="bar"><i id="progBar" style="width:0"></i></div><span id="progTxt"></span></div>
+  </div>
+  <div class="row tools">
+    <button class="btn" id="prevBtn" title="快捷鍵 ←">上一題</button>
+    <button class="btn p" id="nextBtn" title="快捷鍵 →">下一題</button>
+    <button class="btn" id="randBtn" title="快捷鍵 R">隨機</button>
+    <button class="btn" id="mapBtn">題目總覽地圖</button>
+    <button class="btn" id="ovBtn">模型答對率總覽</button>
+    <button class="btn" id="loadBtn">載入 JSON</button>
+    <input type="file" id="fileIn" accept=".json,application/json" hidden>
+    <select id="subjSel" aria-label="科目"></select>
+    <select id="diffSel" aria-label="難度">
+      <option value="all">全部難度</option>
+      <option value="none">無模型答對</option>
+      <option value="hard">難（≤ 1/3 答對）</option>
+      <option value="mid">中（1/3–2/3）</option>
+      <option value="easy">易（≥ 2/3 答對）</option>
+      <option value="all1">全部模型答對</option>
+    </select>
+    <input type="search" id="q" placeholder="搜尋題目 / ID" aria-label="搜尋">
+  </div>
+</header>
+<div class="demo" id="demoBar">目前顯示的是示範資料：題目是自編的 MMLU 風格範例，模型對錯為固定亂數產生，不是真實結果。按「載入 JSON」或把檔案拖進頁面，換成 RouterBench 的實際資料（轉檔方式見「模型答對率總覽」最下方）。</div>
+
+<main>
+  <section class="card" id="qCard">
+    <div class="ch">
+      <h2 id="qNo"></h2>
+      <span class="chip" id="qId"></span>
+      <span class="chip b" id="qSubj"></span>
+      <span class="chip" id="qDiff"></span>
+      <span style="flex:1"></span>
+      <span class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn" id="fsDn" aria-label="縮小字體">A-</button><button class="btn" id="fsUp" aria-label="放大字體">A+</button></span>
+    </div>
+    <div class="cb">
+      <div class="q" id="qText"></div>
+      <ul class="opts" id="qOpts"></ul>
+      <div class="tail" id="qTail"></div>
+      <details class="raw"><summary>查看原始 prompt</summary><pre id="qRaw"></pre></details>
+    </div>
+  </section>
+
+  <div class="side">
+    <section class="card">
+      <div class="ch"><h2>正確答案</h2></div>
+      <div class="cb key">
+        <div class="big" id="gold"></div>
+        <div>
+          <div class="stat" id="qRate"></div>
+          <div class="mut" id="qRateSub"></div>
+          <div class="bar" style="margin-top:10px;max-width:none"><i id="qBar"></i></div>
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="ch"><h2>各模型作答</h2><span class="mut" id="filtNote"></span></div>
+      <table>
+        <thead><tr><th>模型</th><th>選擇</th><th>本題</th><th class="hide-s">整體答對率（目前篩選）</th></tr></thead>
+        <tbody id="mBody"></tbody>
+      </table>
+      <div class="note">模型依整體答對率排序。「選擇」是從模型回覆中抽出的選項字母；整體答對率只計算有結果的題目。</div>
+    </section>
+  </div>
+</main>
+
+<dialog id="mapDlg">
+  <div class="dh"><h3>題目總覽地圖</h3><button class="btn" data-close>關閉</button></div>
+  <div class="db">
+    <div class="legend"><span>每格一題，顏色為該題的模型答對比例，點一下跳到該題：</span>
+      <span><i style="background:#c63b30"></i>0%</span><span><i style="background:#e8a33a"></i>~33%</span><span><i style="background:#cdbf3c"></i>~66%</span><span><i style="background:#178a4c"></i>100%</span><span><i style="background:#9aa3ad"></i>無資料</span></div>
+    <div class="grid" id="mapGrid"></div>
+  </div>
+</dialog>
+
+<dialog id="ovDlg">
+  <div class="dh"><h3>模型答對率總覽</h3><button class="btn" data-close>關閉</button></div>
+  <div class="db">
+    <p class="mut" id="ovNote"></p>
+    <table><thead><tr><th>模型</th><th class="n">答對 / 有效題數</th><th>答對率</th></tr></thead><tbody id="ovBody"></tbody></table>
+    <h3 style="margin:24px 0 8px;font-size:18px">各科目 × 模型答對率</h3>
+    <div class="scroll"><table class="hm" id="hm"></table></div>
+    <h3 style="margin:24px 0 8px;font-size:18px">換成 RouterBench 實際資料</h3>
+    <p>1. 從 HuggingFace 下載 <code>withmartian/routerbench</code> 的 <code>routerbench_0shot.pkl</code>（或 5shot）。<br>
+       2. 用附上的 <code>routerbench_to_json.py</code> 轉檔，再按「載入 JSON」選取輸出的檔案：</p>
+    <pre class="cmd" id="cmdTxt">python routerbench_to_json.py routerbench_0shot.pkl -o mmlu_routerbench.json</pre>
+    <button class="btn" id="copyCmd">複製指令</button>
+    <p class="mut">RouterBench 沒有正解欄位，正確答案是用答對模型所選字母的多數決反推；沒有任何模型答對的題目會顯示「無法反推」。JSON 格式：<code>{"models":[...], "items":[{"id","subject","prompt","gold","results":{model:0|1},"picks":{model:"A"}}]}</code></p>
+  </div>
+</dialog>
+
+<div class="drop" id="drop">放開以載入 JSON</div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem('mmluv_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('mmluv_'+k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- demo data (self-written questions, random marks) ---------- */
+const DEMO_MODELS=['gpt-4-1106-preview','claude-v2','mistralai/mixtral-8x7b-chat','zero-one-ai/Yi-34B-Chat','gpt-3.5-turbo-1106','claude-instant-v1','meta/llama-2-70b-chat','mistralai/mistral-7b-chat','WizardLM/WizardLM-13B-V1.2','meta/code-llama-instruct-34b-chat','claude-v1'];
+const DEMO_Q=[
+['college-biology','Which vitamin is the cofactor for carboxylation reactions such as the conversion of pyruvate to oxaloacetate?\nA) Thiamine\nB) Biotin\nC) Riboflavin\nD) Cobalamin\nAnswer:','B'],
+['high-school-statistics','Heights are approximately normal with mean 68 inches and standard deviation 3 inches. About what percentage of people are taller than 74 inches?\nA) 2.5%\nB) 5%\nC) 16%\nD) 32%\nAnswer:','A'],
+['abstract-algebra','What is the order of the element (1 2 3)(4 5) in the symmetric group S5?\nA) 2\nB) 3\nC) 5\nD) 6\nAnswer:','D'],
+['us-foreign-policy','The Marshall Plan primarily provided which kind of assistance to Western Europe after World War II?\nA) Military bases\nB) Economic recovery aid\nC) Nuclear guarantees\nD) Colonial administration\nAnswer:','B'],
+['computer-security','Which attack works by inserting malicious SQL into an input field that is passed to a database query?\nA) Cross-site scripting\nB) Buffer overflow\nC) SQL injection\nD) Phishing\nAnswer:','C'],
+['formal-logic','Which of the following is the contrapositive of "If P then Q"?\nA) If Q then P\nB) If not P then not Q\nC) If not Q then not P\nD) P and not Q\nAnswer:','C'],
+['high-school-physics','A ball is dropped from rest. Ignoring air resistance, how far does it fall in the first 2 seconds (g = 10 m/s^2)?\nA) 10 m\nB) 20 m\nC) 40 m\nD) 5 m\nAnswer:','B'],
+['professional-law','Which doctrine bars a party from relitigating an issue already decided in a prior case between the same parties?\nA) Collateral estoppel\nB) Respondeat superior\nC) Res ipsa loquitur\nD) Mens rea\nAnswer:','A'],
+['virology','Which enzyme lets retroviruses make DNA from their RNA genome?\nA) DNA ligase\nB) RNA polymerase II\nC) Reverse transcriptase\nD) Helicase\nAnswer:','C'],
+['moral-scenarios','Which ethical theory judges actions mainly by their consequences for overall well-being?\nA) Deontology\nB) Virtue ethics\nC) Utilitarianism\nD) Divine command theory\nAnswer:','C'],
+['econometrics','In OLS, what problem arises when the error variance changes with the level of an explanatory variable?\nA) Multicollinearity\nB) Heteroskedasticity\nC) Autocorrelation\nD) Endogeneity\nAnswer:','B'],
+['anatomy','Which bone is the longest in the human body?\nA) Humerus\nB) Tibia\nC) Femur\nD) Fibula\nAnswer:','C']];
+function demo(){
+  let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+  const skill=[.9,.8,.72,.72,.68,.62,.6,.55,.5,.45,.66];
+  const items=[];
+  for(let k=0;k<3;k++)DEMO_Q.forEach((q,i)=>{const hard=r()*.5;const res={},pk={};
+    DEMO_MODELS.forEach((m,j)=>{const ok=r()<skill[j]-hard+.15?1:0;res[m]=ok;pk[m]=ok?q[2]:'ABCD'.replace(q[2],'')[Math.floor(r()*3)]});
+    items.push({id:`demo-${q[0]}-${k+1}`,subject:q[0],prompt:q[1],gold:q[2],results:res,picks:pk})});
+  return {source:'示範資料',models:DEMO_MODELS,items,demo:true};
+}
+
+/* ---------- state ---------- */
+let D=null,view=[],pos=0,fs=store.get('fs',17);
+const short=m=>m.split('/').pop();
+function frac(it){let c=0,n=0;for(const m of D.models){const v=it.results[m];if(v===0||v===1){n++;c+=v}}return n?c/n:null}
+function count(it){let c=0,n=0;for(const m of D.models){const v=it.results[m];if(v===0||v===1){n++;c+=v}}return[c,n]}
+function color(f){if(f==null)return'#9aa3ad';const st=[[0,[198,59,48]],[.33,[232,163,58]],[.66,[205,191,60]],[1,[23,138,76]]];
+  for(let i=1;i<st.length;i++)if(f<=st[i][0]){const[a,ca]=st[i-1],[b,cb]=st[i];const t=(f-a)/(b-a);return`rgb(${ca.map((v,k)=>Math.round(v+(cb[k]-v)*t)).join(',')})`}return'#178a4c'}
+
+function setData(d){
+  if(!d||!Array.isArray(d.items)||!Array.isArray(d.models))throw new Error('格式不符：需要 models 與 items');
+  d.items.forEach(it=>{it.results=it.results||{};it.picks=it.picks||{};it._f=null});
+  D=d;D.items.forEach(it=>it._f=frac(it));
+  $('srcChip').textContent=d.source||'自訂資料';
+  $('demoBar').hidden=!d.demo;
+  const subs=[...new Set(d.items.map(i=>i.subject||'未分類'))].sort();
+  $('subjSel').innerHTML='<option value="">全部科目（'+subs.length+'）</option>'+subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  applyFilter(true);
+}
+function applyFilter(reset){
+  const sub=$('subjSel').value,df=$('diffSel').value,q=$('q').value.trim().toLowerCase();
+  const curId=view[pos]?.id;
+  view=D.items.filter(it=>{
+    if(sub&&(it.subject||'未分類')!==sub)return false;
+    const f=it._f;
+    if(df==='none'&&f!==0)return false;if(df==='all1'&&f!==1)return false;
+    if(df==='hard'&&!(f!=null&&f<=1/3))return false;if(df==='mid'&&!(f!=null&&f>1/3&&f<2/3))return false;if(df==='easy'&&!(f!=null&&f>=2/3))return false;
+    if(q&&!(String(it.prompt).toLowerCase().includes(q)||String(it.id).toLowerCase().includes(q)))return false;
+    return true});
+  const keep=view.findIndex(it=>it.id===curId);
+  pos=reset?Math.min(store.get('pos',0),Math.max(view.length-1,0)):(keep>=0?keep:0);
+  $('sizeChip').textContent=`${view.length.toLocaleString()} / ${D.items.length.toLocaleString()} 題 · ${D.models.length} 個模型`;
+  render();
+}
+function accOver(list){return D.models.map(m=>{let c=0,n=0;for(const it of list){const v=it.results[m];if(v===0||v===1){n++;c+=v}}return{m,c,n,a:n?c/n:null}})}
+
+function parse(p){
+  const lines=String(p).split('\n');const opts=[];let first=-1,last=-1;
+  lines.forEach((l,i)=>{const mm=l.match(/^\s*\(?([A-D])[\.\)．、:：]\s*(.*)$/);if(mm&&(opts.length===0||mm[1].charCodeAt(0)===opts[opts.length-1].k.charCodeAt(0)+1)){opts.push({k:mm[1],t:mm[2]});if(first<0)first=i;last=i}});
+  if(opts.length<2)return{q:p,opts:[],tail:''};
+  return{q:lines.slice(0,first).join('\n').trim(),opts,tail:lines.slice(last+1).join('\n').trim()};
+}
+
+function render(){
+  document.documentElement.style.setProperty('--fs',fs+'px');
+  const it=view[pos];
+  $('progTxt').textContent=view.length?`第 ${pos+1} / ${view.length.toLocaleString()} 題`:'沒有符合的題目';
+  $('progBar').style.width=view.length?((pos+1)/view.length*100)+'%':'0';
+  if(!it){['qNo','qId','qSubj','qDiff','qText','qTail','qRaw','qRate','qRateSub'].forEach(i=>$(i).textContent='');$('qText').textContent='沒有符合篩選條件的題目。';$('qOpts').innerHTML='';$('mBody').innerHTML='';$('gold').textContent='–';return}
+  store.set('pos',pos);
+  const[c,n]=count(it);const f=it._f;
+  $('qNo').textContent=`第 ${pos+1} / ${view.length.toLocaleString()} 題`;
+  $('qId').textContent=it.id;$('qSubj').textContent=it.subject||'未分類';
+  const dl=f==null?'無資料':f===0?'無模型答對':f<=1/3?'難':f<2/3?'中':'易';
+  $('qDiff').textContent=`難度：${dl}`;$('qDiff').style.color=color(f);
+  const P=parse(it.prompt);
+  $('qText').textContent=P.q;$('qTail').textContent=P.tail;$('qRaw').textContent=it.prompt;
+  const votes={};D.models.forEach(m=>{const k=it.picks[m];if(k)votes[k]=(votes[k]||0)+1});
+  $('qOpts').innerHTML=P.opts.map(o=>`<li class="${o.k===it.gold?'gold':''}"><b>${esc(o.k)}</b><span>${esc(o.t)}${o.k===it.gold?' <span class="chip g" style="margin-left:6px">正解</span>':''}</span><small>${votes[o.k]?votes[o.k]+' 個模型選':''}</small></li>`).join('');
+  const g=$('gold');g.textContent=it.gold||'無法反推';g.className='big'+(it.gold?'':' na');
+  $('qRate').textContent=n?`${c} / ${n} 個模型答對`:'無作答資料';
+  $('qRateSub').textContent=n?`本題答對率 ${(c/n*100).toFixed(0)}%`+(it.gold?'':'（沒有模型答對，正解無法從資料反推）'):'';
+  $('qBar').style.width=n?(c/n*100)+'%':'0';
+  const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
+  $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
+  $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];const pk=it.picks[m];
+    const mk=v===1?'<span class="mk y">✓ 對</span>':v===0?'<span class="mk x">✗ 錯</span>':'<span class="mk u">無</span>';
+    return`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="n">${esc(pk||'–')}</td><td>${mk}</td><td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
+  if($('mapDlg').open)markMap();
+}
+
+/* ---------- map & overview ---------- */
+function buildMap(){
+  const lim=view.slice(0,6000);
+  $('mapGrid').innerHTML=lim.map((it,i)=>`<button class="cell" data-i="${i}" style="background:${color(it._f)}" title="${esc(it.id)} · ${it._f==null?'無資料':Math.round(it._f*100)+'%'}" aria-label="第 ${i+1} 題"></button>`).join('')+(view.length>6000?`<p class="mut" style="grid-column:1/-1">只顯示前 6000 題，請用科目或難度篩選縮小範圍。</p>`:'');
+  markMap();
+}
+function markMap(){$('mapGrid').querySelectorAll('.cell.cur').forEach(e=>e.classList.remove('cur'));const c=$('mapGrid').querySelector(`[data-i="${pos}"]`);if(c)c.classList.add('cur')}
+function buildOv(){
+  const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
+  $('ovNote').textContent=`依目前篩選的 ${view.length.toLocaleString()} 題計算。資料來源：${D.source||'自訂'}${D.demo?'（示範用亂數，非真實結果）':''}。`;
+  $('ovBody').innerHTML=acc.map(({m,c,n,a})=>`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="n">${c.toLocaleString()} / ${n.toLocaleString()}</td><td style="width:45%"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`).join('');
+  const subs=[...new Set(view.map(i=>i.subject||'未分類'))].sort();const ms=acc.map(x=>x.m);
+  const rows=subs.map(s=>{const L=view.filter(i=>(i.subject||'未分類')===s);const A=accOver(L);const by=Object.fromEntries(A.map(x=>[x.m,x]));
+    return`<tr><td class="s">${esc(s)} <span class="mut">(${L.length})</span></td>${ms.map(m=>{const a=by[m].a;return`<td style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':'#fff'}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`}).join('');
+  $('hm').innerHTML=`<thead><tr><th>科目（題數）</th>${ms.map(m=>`<th title="${esc(m)}">${esc(short(m).slice(0,14))}</th>`).join('')}</tr></thead><tbody>${rows}</tbody>`;
+}
+
+/* ---------- events ---------- */
+const go=d=>{if(!view.length)return;pos=(pos+d+view.length)%view.length;render()};
+$('prevBtn').onclick=()=>go(-1);$('nextBtn').onclick=()=>go(1);
+$('randBtn').onclick=()=>{if(view.length){pos=Math.floor(Math.random()*view.length);render()}};
+$('fsUp').onclick=()=>{fs=Math.min(24,fs+1);store.set('fs',fs);render()};
+$('fsDn').onclick=()=>{fs=Math.max(13,fs-1);store.set('fs',fs);render()};
+$('subjSel').onchange=()=>applyFilter(false);$('diffSel').onchange=()=>applyFilter(false);
+let qt;$('q').oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>applyFilter(false),200)};
+$('mapBtn').onclick=()=>{buildMap();$('mapDlg').showModal()};
+$('ovBtn').onclick=()=>{buildOv();$('ovDlg').showModal()};
+$('mapGrid').onclick=e=>{const c=e.target.closest('.cell');if(c){pos=+c.dataset.i;render();$('mapDlg').close()}};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
+document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close()}));
+$('copyCmd').onclick=async()=>{try{await navigator.clipboard.writeText($('cmdTxt').textContent);$('copyCmd').textContent='已複製'}catch(e){$('copyCmd').textContent='請手動選取複製'}};
+$('loadBtn').onclick=()=>$('fileIn').click();
+async function loadFile(f){
+  if(!f)return;$('srcChip').textContent='讀取中…';
+  try{const d=JSON.parse(await f.text());d.source=d.source||f.name;store.set('pos',0);setData(d)}
+  catch(e){$('srcChip').textContent='載入失敗：'+e.message;$('srcChip').className='chip w'; return}
+  $('srcChip').className='chip b';
+}
+$('fileIn').onchange=e=>loadFile(e.target.files[0]);
+let dc=0;
+addEventListener('dragenter',e=>{e.preventDefault();dc++;$('drop').classList.add('on')});
+addEventListener('dragleave',()=>{if(--dc<=0){dc=0;$('drop').classList.remove('on')}});
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();dc=0;$('drop').classList.remove('on');loadFile(e.dataTransfer.files[0])});
+addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
+  if(e.key==='ArrowRight')go(1);else if(e.key==='ArrowLeft')go(-1);else if(e.key==='r'||e.key==='R')$('randBtn').click()});
+
+setData(demo());
+}
+</script>
+</body>
+</html>
