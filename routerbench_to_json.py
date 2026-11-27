@@ -67,10 +67,19 @@ def load_mmlu(d):
     table = {}
     for f in files:
         t = pd.read_parquet(f)
-        for q, a in zip(t["question"], t["answer"]):
-            table[norm(q)] = "ABCD"[int(a)]
+        for q, ch, a in zip(t["question"], t["choices"], t["answer"]):
+            table[norm(q)] = norm(list(ch)[int(a)])  # 正解的「選項文字」（RouterBench 的選項順序和原版不同）
     print(f"載入原版 MMLU {len(table)} 題（{len(files)} 個 parquet）")
     return table
+
+
+def parse_options(prompt):
+    opts = {}
+    for l in prompt_text(prompt).split("\n"):
+        m = OPT_RE.match(l)
+        if m and m.group(1) not in opts:
+            opts[m.group(1)] = norm(m.group(2))
+    return opts
 
 
 def question_keys(prompt):
@@ -111,6 +120,7 @@ def main():
 
     mmlu = load_mmlu(args.mmlu_dir) if args.mmlu_dir else {}
     src_count = Counter()
+    agree = Counter()
     subjects = sorted(df["subject"].unique())
     sidx = {s: i for i, s in enumerate(subjects)}
     items = []
@@ -121,17 +131,27 @@ def main():
             res.append(None if pd.isna(v) else (1 if float(v) >= 0.5 else 0))
             picks.append(extract_letter(row.get(f"{m}|model_response")))
         gold, gsrc = None, ""
+        opts = parse_options(row.get("prompt", ""))
         for key in question_keys(row.get("prompt", "")):
             if key in mmlu:
-                gold, gsrc = mmlu[key], "m"
+                hit = [k for k, t in opts.items() if t == mmlu[key]]
+                if len(hit) == 1:
+                    gold, gsrc = hit[0], "m"
                 break
         if not gold:
             votes = Counter(p for p, r in zip(picks, res) if r == 1 and p)
             if votes:
                 gold, gsrc = votes.most_common(1)[0][0], "v"
         src_count[gsrc or "none"] += 1
+        if gold:
+            for p, r in zip(picks, res):
+                if r is not None and p:
+                    agree[(r == 1) == (p == gold)] += 1
         items.append((str(row.get("sample_id", len(items))), row["subject"], prompt_text(row.get("prompt", "")), gold, gsrc, res, picks))
     print("正解來源統計（m=原版 MMLU, v=模型多數決）：", dict(src_count))
+    tot = sum(agree.values())
+    if tot:
+        print(f"一致性檢查：RouterBench 對錯 與「模型選項 == 正解」相符 {agree[True]}/{tot} = {agree[True]/tot:.2%}")
 
     if args.verbose_json:
         out = {"source": f"RouterBench ({os.path.basename(args.pkl)})", "models": models,
