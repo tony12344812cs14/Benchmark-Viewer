@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MMLU 答對率瀏覽</title>
+<title>LLM Benchmark 逐題瀏覽</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -86,13 +86,34 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 .demo{background:light-dark(#fff6e0,#2e2510);color:light-dark(#7a5000,#f3c75c);padding:8px max(2vw,14px);font-size:14px}
 @media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.prog{justify-content:flex-start}}
 @media(max-width:600px){h1{font-size:18px}.ch h2{font-size:19px}.cb{padding:14px}.big{width:64px;height:64px;font-size:36px}.hide-s{display:none}}
+[hidden]{display:none!important}
+.dsrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#dsSel{font-weight:700;color:var(--blue);background:var(--blueb);border-color:transparent;max-width:min(560px,100%)}
+.goldtxt{white-space:pre-wrap;font-size:15px;max-height:220px;overflow:auto;margin-bottom:10px;background:var(--okb);border:1px solid var(--ok);border-radius:10px;padding:10px 12px;margin-top:4px;overflow-wrap:anywhere}
+.key.long{grid-template-columns:minmax(0,1fr)}
+.pred{max-width:260px;font-size:14px;overflow-wrap:anywhere}
+.pred details summary{cursor:pointer;color:var(--blue);list-style:none}
+.pred details summary::-webkit-details-marker{display:none}
+.pred pre{white-space:pre-wrap;font-size:13px;max-height:260px;overflow:auto;margin:6px 0 0;background:var(--bg);padding:8px;border-radius:8px}
+.cheap{margin-top:10px;font-size:14px;padding:8px 12px;border-radius:10px;background:var(--blueb);color:var(--ink)}
+.cheap b{color:var(--blue)}
+.fig{position:relative;height:380px;margin:8px 0 6px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.fig text{font:12px "Noto Sans TC",system-ui,sans-serif;fill:var(--ink)}
+.fig .ax{stroke:var(--line)}.fig .tk{fill:var(--mut)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--card);min-height:40px;padding:0 14px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--blue);color:#fff}
+#q{min-width:180px}
+.q{overflow-wrap:anywhere}
+.loading{opacity:.55;pointer-events:none}
 </style>
 </head>
 <body>
 <header>
   <div class="row">
-    <h1>MMLU 題目與模型答對率</h1>
-    <span class="chip b" id="srcChip">載入中…</span>
+    <h1>LLM Benchmark 逐題瀏覽</h1>
+    <div class="dsrow"><select id="dsSel" aria-label="資料集"></select></div>
     <span class="chip g" id="sizeChip"></span>
     <div class="prog"><div class="bar"><i id="progBar" style="width:0"></i></div><span id="progTxt"></span></div>
   </div>
@@ -101,7 +122,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
     <button class="btn p" id="nextBtn" title="快捷鍵 →">下一題</button>
     <button class="btn" id="randBtn" title="快捷鍵 R">隨機</button>
     <button class="btn" id="mapBtn">題目總覽地圖</button>
-    <button class="btn" id="ovBtn">模型答對率總覽</button>
+    <button class="btn" id="ovBtn">模型表現總覽</button>
     <button class="btn" id="loadBtn">載入 JSON</button>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
     <select id="subjSel" aria-label="科目"></select>
@@ -116,9 +137,9 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
     <input type="search" id="q" placeholder="搜尋題目 / ID" aria-label="搜尋">
   </div>
 </header>
-<div class="demo" id="demoBar" hidden>找不到 data/mmlu.json，目前顯示的是示範資料（自編題目、亂數對錯，非真實結果）。可按「載入 JSON」載入 RouterBench 轉出的檔案。</div>
+<div class="demo" id="demoBar" hidden>找不到資料檔，目前顯示的是示範資料（自編題目、亂數對錯，非真實結果）。</div>
 
-<main>
+<main id="main">
   <section class="card" id="qCard">
     <div class="ch">
       <h2 id="qNo"></h2>
@@ -139,23 +160,27 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
   <div class="side">
     <section class="card">
       <div class="ch"><h2>正確答案</h2></div>
-      <div class="cb key">
+      <div class="cb key" id="keyBox">
         <div class="big" id="gold"></div>
         <div>
+          <div class="goldtxt" id="goldTxt" hidden></div>
           <div class="stat" id="qRate"></div>
           <div class="mut" id="qRateSub"></div>
           <div class="mut" id="goldSrc"></div>
           <div class="bar" style="margin-top:10px;max-width:none"><i id="qBar"></i></div>
+          <div class="cheap" id="cheap" hidden></div>
         </div>
       </div>
     </section>
     <section class="card">
       <div class="ch"><h2>各模型作答</h2><span class="mut" id="filtNote"></span></div>
+      <div class="scroll">
       <table>
-        <thead><tr><th>模型</th><th>選擇</th><th>本題</th><th class="hide-s">整體答對率（目前篩選）</th></tr></thead>
+        <thead><tr><th>模型</th><th>作答</th><th>本題</th><th class="n costCol">本題成本</th><th class="hide-s">整體答對率（目前篩選）</th></tr></thead>
         <tbody id="mBody"></tbody>
       </table>
-      <div class="note">模型依整體答對率排序。「選擇」是從模型回覆中抽出的選項字母；整體答對率只計算有結果的題目。</div>
+      </div>
+      <div class="note" id="mNote"></div>
     </section>
   </div>
 </main>
@@ -163,25 +188,35 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 <dialog id="mapDlg">
   <div class="dh"><h3>題目總覽地圖</h3><button class="btn" data-close>關閉</button></div>
   <div class="db">
-    <div class="legend"><span>每格一題，顏色為該題的模型答對比例，點一下跳到該題：</span>
+    <div class="legend"><span>每格一題，顏色為該題的模型平均得分，點一下跳到該題：</span>
       <span><i style="background:#c63b30"></i>0%</span><span><i style="background:#e8a33a"></i>~33%</span><span><i style="background:#cdbf3c"></i>~66%</span><span><i style="background:#178a4c"></i>100%</span><span><i style="background:#9aa3ad"></i>無資料</span></div>
     <div class="grid" id="mapGrid"></div>
   </div>
 </dialog>
 
 <dialog id="ovDlg">
-  <div class="dh"><h3>模型答對率總覽</h3><button class="btn" data-close>關閉</button></div>
+  <div class="dh"><h3>模型表現總覽</h3><button class="btn" data-close>關閉</button></div>
   <div class="db">
+    <div id="pcWrap" hidden>
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:0;font-size:18px">效能 vs 成本</h3>
+        <div class="seg" role="group" aria-label="範圍"><button id="scCur" aria-pressed="true">目前資料集（篩選後）</button><button id="scAll" aria-pressed="false">10 個資料集平均</button></div>
+      </div>
+      <p class="mut" id="pcNote" style="margin:6px 0 0"></p>
+      <div class="fig" id="pcFig"><svg id="pcSvg" role="img" aria-label="各模型平均每題成本與答對率散佈圖"></svg></div>
+    </div>
     <p class="mut" id="ovNote"></p>
-    <table><thead><tr><th>模型</th><th class="n">答對 / 有效題數</th><th>答對率</th></tr></thead><tbody id="ovBody"></tbody></table>
-    <h3 style="margin:24px 0 8px;font-size:18px">各科目 × 模型答對率</h3>
-    <div class="scroll"><table class="hm" id="hm"></table></div>
-    <h3 style="margin:24px 0 8px;font-size:18px">換成 RouterBench 實際資料</h3>
-    <p>1. 從 HuggingFace 下載 <code>withmartian/routerbench</code> 的 <code>routerbench_0shot.pkl</code>（或 5shot）。<br>
-       2. 用附上的 <code>routerbench_to_json.py</code> 轉檔，再按「載入 JSON」選取輸出的檔案：</p>
-    <pre class="cmd" id="cmdTxt">python routerbench_to_json.py routerbench_0shot.pkl -o mmlu_routerbench.json</pre>
-    <button class="btn" id="copyCmd">複製指令</button>
-    <p class="mut">正確答案優先取原版 MMLU（cais/mmlu）的官方正解；比對不到原題時，才用答對模型所選字母的多數決反推，頁面上會標示來源。JSON 格式：<code>{"models":[...], "items":[{"id","subject","prompt","gold","results":{model:0|1},"picks":{model:"A"}}]}</code></p>
+    <div class="scroll"><table class="stack"><thead id="ovHead"></thead><tbody id="ovBody"></tbody></table></div>
+    <div id="allWrap" hidden>
+      <h3 style="margin:24px 0 8px;font-size:18px">LLMRouterBench 效能-成本：各資料集 × 模型答對率</h3>
+      <div class="scroll"><table class="hm" id="allHm"></table></div>
+    </div>
+    <div id="hmWrap">
+      <h3 style="margin:24px 0 8px;font-size:18px">各科目 × 模型答對率</h3>
+      <div class="scroll"><table class="hm" id="hm"></table></div>
+    </div>
+    <h3 style="margin:24px 0 8px;font-size:18px">資料來源</h3>
+    <p class="mut">RouterBench MMLU：<code>withmartian/routerbench</code>（routerbench_0shot.pkl），正解取原版 MMLU（<code>cais/mmlu</code>），依選項文字對應到 RouterBench 打亂後的字母。LLMRouterBench：<code>NPULH/LLMRouterBench</code>（bench-release.tar.gz），依官方 <code>baseline_config_performance_cost.yaml</code> 取 10 個資料集 × 13 個模型，成本為官方紀錄的每題 API 費用（美元）。題目與作答過長時會截斷。</p>
   </div>
 </dialog>
 
@@ -191,56 +226,47 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 {
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const store={get(k,d){try{const v=localStorage.getItem('mmluv_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('mmluv_'+k,JSON.stringify(v))}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem('bv_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('bv_'+k,JSON.stringify(v))}catch(e){}}};
 
-/* ---------- demo data (self-written questions, random marks) ---------- */
-const DEMO_MODELS=['gpt-4-1106-preview','claude-v2','mistralai/mixtral-8x7b-chat','zero-one-ai/Yi-34B-Chat','gpt-3.5-turbo-1106','claude-instant-v1','meta/llama-2-70b-chat','mistralai/mistral-7b-chat','WizardLM/WizardLM-13B-V1.2','meta/code-llama-instruct-34b-chat','claude-v1'];
-const DEMO_Q=[
-['college-biology','Which vitamin is the cofactor for carboxylation reactions such as the conversion of pyruvate to oxaloacetate?\nA) Thiamine\nB) Biotin\nC) Riboflavin\nD) Cobalamin\nAnswer:','B'],
-['high-school-statistics','Heights are approximately normal with mean 68 inches and standard deviation 3 inches. About what percentage of people are taller than 74 inches?\nA) 2.5%\nB) 5%\nC) 16%\nD) 32%\nAnswer:','A'],
-['abstract-algebra','What is the order of the element (1 2 3)(4 5) in the symmetric group S5?\nA) 2\nB) 3\nC) 5\nD) 6\nAnswer:','D'],
-['us-foreign-policy','The Marshall Plan primarily provided which kind of assistance to Western Europe after World War II?\nA) Military bases\nB) Economic recovery aid\nC) Nuclear guarantees\nD) Colonial administration\nAnswer:','B'],
-['computer-security','Which attack works by inserting malicious SQL into an input field that is passed to a database query?\nA) Cross-site scripting\nB) Buffer overflow\nC) SQL injection\nD) Phishing\nAnswer:','C'],
-['formal-logic','Which of the following is the contrapositive of "If P then Q"?\nA) If Q then P\nB) If not P then not Q\nC) If not Q then not P\nD) P and not Q\nAnswer:','C'],
-['high-school-physics','A ball is dropped from rest. Ignoring air resistance, how far does it fall in the first 2 seconds (g = 10 m/s^2)?\nA) 10 m\nB) 20 m\nC) 40 m\nD) 5 m\nAnswer:','B'],
-['professional-law','Which doctrine bars a party from relitigating an issue already decided in a prior case between the same parties?\nA) Collateral estoppel\nB) Respondeat superior\nC) Res ipsa loquitur\nD) Mens rea\nAnswer:','A'],
-['virology','Which enzyme lets retroviruses make DNA from their RNA genome?\nA) DNA ligase\nB) RNA polymerase II\nC) Reverse transcriptase\nD) Helicase\nAnswer:','C'],
-['moral-scenarios','Which ethical theory judges actions mainly by their consequences for overall well-being?\nA) Deontology\nB) Virtue ethics\nC) Utilitarianism\nD) Divine command theory\nAnswer:','C'],
-['econometrics','In OLS, what problem arises when the error variance changes with the level of an explanatory variable?\nA) Multicollinearity\nB) Heteroskedasticity\nC) Autocorrelation\nD) Endogeneity\nAnswer:','B'],
-['anatomy','Which bone is the longest in the human body?\nA) Humerus\nB) Tibia\nC) Femur\nD) Fibula\nAnswer:','C']];
+/* ---------- demo data (only when no data files exist) ---------- */
 function demo(){
-  let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
-  const skill=[.9,.8,.72,.72,.68,.62,.6,.55,.5,.45,.66];
-  const items=[];
-  for(let k=0;k<3;k++)DEMO_Q.forEach((q,i)=>{const hard=r()*.5;const res={},pk={};
-    DEMO_MODELS.forEach((m,j)=>{const ok=r()<skill[j]-hard+.15?1:0;res[m]=ok;pk[m]=ok?q[2]:'ABCD'.replace(q[2],'')[Math.floor(r()*3)]});
-    items.push({id:`demo-${q[0]}-${k+1}`,subject:q[0],prompt:q[1],gold:q[2],results:res,picks:pk})});
-  return {source:'示範資料',models:DEMO_MODELS,items,demo:true};
+  const M=['model-a','model-b','model-c'];let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+  const Q=[['biology','Which vitamin is the cofactor for carboxylation reactions?\nA) Thiamine\nB) Biotin\nC) Riboflavin\nD) Cobalamin','B'],['physics','A ball dropped from rest falls how far in 2 s (g = 10 m/s^2)?\nA) 10 m\nB) 20 m\nC) 40 m\nD) 5 m','B']];
+  return {source:'示範資料',demo:true,models:M,items:Q.map((q,i)=>{const results={},picks={};M.forEach(m=>{const ok=r()<.6?1:0;results[m]=ok;picks[m]=ok?q[2]:'A'});return{id:'demo-'+i,subject:q[0],prompt:q[1],gold:q[2],results,picks,costs:{}}})};
 }
 
 /* ---------- state ---------- */
-let D=null,view=[],pos=0,fs=store.get('fs',17);
+let MAN=null,CUR=null,D=null,view=[],pos=0,fs=store.get('fs',17),scMode='cur';
+const cache={};
 const short=m=>m.split('/').pop();
-function frac(it){let c=0,n=0;for(const m of D.models){const v=it.results[m];if(v===0||v===1){n++;c+=v}}return n?c/n:null}
-function count(it){let c=0,n=0;for(const m of D.models){const v=it.results[m];if(v===0||v===1){n++;c+=v}}return[c,n]}
+const isNum=v=>typeof v==='number'&&isFinite(v);
+function fmtCost(c){if(!isNum(c))return'–';if(c===0)return'$0';if(c<0.0001)return'$'+c.toExponential(1);return'$'+(c<0.01?c.toPrecision(2):c<1?c.toFixed(4):c.toFixed(2))}
+function count(it){let c=0,n=0;for(const m of D.models){const v=it.results[m];if(isNum(v)){n++;c+=v}}return[c,n]}
 function color(f){if(f==null)return'#9aa3ad';const st=[[0,[198,59,48]],[.33,[232,163,58]],[.66,[205,191,60]],[1,[23,138,76]]];
   for(let i=1;i<st.length;i++)if(f<=st[i][0]){const[a,ca]=st[i-1],[b,cb]=st[i];const t=(f-a)/(b-a);return`rgb(${ca.map((v,k)=>Math.round(v+(cb[k]-v)*t)).join(',')})`}return'#178a4c'}
 
-function expand(d){
-  const M=d.models,S=d.subjects||[];
-  return {source:d.source,models:M,items:d.items.map(([id,si,prompt,gold,gs,rs,ps])=>{const results={},picks={};
-    M.forEach((m,j)=>{const r=rs[j];results[m]=r==='1'?1:r==='0'?0:null;const p=ps[j];picks[m]=p&&p!=='-'?p:null});
-    return{id,subject:S[si]??String(si),prompt,gold:gold||null,goldSrc:gs,results,picks}})};
+/* ---------- formats ---------- */
+function normalize(d){
+  if(d.format==='compact-v1'){const M=d.models,S=d.subjects||[];
+    return{source:d.source,models:M,hasCost:false,kind:'mmlu',items:d.items.map(([id,si,prompt,gold,gs,rs,ps])=>{const results={},picks={};
+      M.forEach((m,j)=>{const r=rs[j];results[m]=r==='1'?1:r==='0'?0:null;const p=ps[j];picks[m]=p&&p!=='-'?p:null});
+      return{id,subject:S[si]??String(si),prompt,gold:gold||null,goldSrc:gs,results,picks,costs:{}}})}}
+  if(d.format==='bench-v2'){const M=d.models;
+    return{source:d.bench+' · '+d.group,models:M,hasCost:true,kind:'lrb',items:d.items.map(([id,q,g,sc,pr,co])=>{const results={},picks={},costs={};
+      M.forEach((m,j)=>{results[m]=sc[j]??null;picks[m]=pr[j]??null;costs[m]=co[j]??null});
+      return{id,subject:d.group,prompt:q,gold:g||null,goldSrc:'',results,picks,costs}})}}
+  if(Array.isArray(d.items)&&Array.isArray(d.models)){d.items.forEach(it=>{it.results=it.results||{};it.picks=it.picks||{};it.costs=it.costs||{}});d.hasCost=d.items.some(it=>Object.values(it.costs).some(isNum));return d}
+  throw new Error('格式不符');
 }
 function setData(d){
-  if(!d||!Array.isArray(d.items)||!Array.isArray(d.models))throw new Error('格式不符：需要 models 與 items');
-  if(d.format==='compact-v1')d=expand(d);
-  d.items.forEach(it=>{it.results=it.results||{};it.picks=it.picks||{};it._f=null});
-  D=d;D.items.forEach(it=>it._f=frac(it));
-  $('srcChip').textContent=d.source||'自訂資料';
+  D=normalize(d);D.items.forEach(it=>{const[c,n]=count(it);it._f=n?c/n:null});
   $('demoBar').hidden=!d.demo;
-  const subs=[...new Set(d.items.map(i=>i.subject||'未分類'))].sort();
+  const subs=[...new Set(D.items.map(i=>i.subject||'未分類'))].sort();
   $('subjSel').innerHTML='<option value="">全部科目（'+subs.length+'）</option>'+subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  $('subjSel').hidden=subs.length<2;
+  document.querySelectorAll('.costCol').forEach(e=>e.hidden=!D.hasCost);
+  $('mNote').textContent=D.kind==='mmlu'?'模型依整體答對率排序。「作答」是從模型回覆中抽出的選項字母；整體答對率只計算有結果的題目。'
+    :'模型依整體答對率排序。「作答」是模型的最終答案（過長已截斷，點開看全文）；得分非 0/1 時顯示分數；成本為官方紀錄的該題 API 費用（美元）。';
   applyFilter(true);
 }
 function applyFilter(reset){
@@ -254,26 +280,29 @@ function applyFilter(reset){
     if(q&&!(String(it.prompt).toLowerCase().includes(q)||String(it.id).toLowerCase().includes(q)))return false;
     return true});
   const keep=view.findIndex(it=>it.id===curId);
-  pos=reset?Math.min(store.get('pos',0),Math.max(view.length-1,0)):(keep>=0?keep:0);
+  pos=reset?Math.min(store.get('pos_'+(CUR||''),0),Math.max(view.length-1,0)):(keep>=0?keep:0);
   $('sizeChip').textContent=`${view.length.toLocaleString()} / ${D.items.length.toLocaleString()} 題 · ${D.models.length} 個模型`;
   render();
 }
-function accOver(list){return D.models.map(m=>{let c=0,n=0;for(const it of list){const v=it.results[m];if(v===0||v===1){n++;c+=v}}return{m,c,n,a:n?c/n:null}})}
+function accOver(list){return D.models.map(m=>{let c=0,n=0,cs=0,nc=0;for(const it of list){const v=it.results[m];if(isNum(v)){n++;c+=v}const k=it.costs[m];if(isNum(k)){nc++;cs+=k}}return{m,c,n,a:n?c/n:null,cost:cs,avg:nc?cs/nc:null}})}
 
 function parse(p){
   const lines=String(p).split('\n');const opts=[];let first=-1,last=-1;
-  lines.forEach((l,i)=>{const mm=l.match(/^\s*\(?([A-D])[\.\)．、:：]\s*(.*)$/);if(mm&&(opts.length===0||mm[1].charCodeAt(0)===opts[opts.length-1].k.charCodeAt(0)+1)){opts.push({k:mm[1],t:mm[2]});if(first<0)first=i;last=i}});
+  lines.forEach((l,i)=>{const mm=l.match(/^\s*\(?([A-J])[\.\)．、:：]\s*(.*)$/);if(mm&&((opts.length===0&&mm[1]==='A')||(opts.length&&mm[1].charCodeAt(0)===opts[opts.length-1].k.charCodeAt(0)+1&&i===last+1))){opts.push({k:mm[1],t:mm[2]});if(first<0)first=i;last=i}});
   if(opts.length<2)return{q:p,opts:[],tail:''};
   return{q:lines.slice(0,first).join('\n').trim(),opts,tail:lines.slice(last+1).join('\n').trim()};
 }
+function mark(v){if(v===1)return'<span class="mk y">✓ 對</span>';if(v===0)return'<span class="mk x">✗ 錯</span>';if(isNum(v))return`<span class="mk ${v>=.5?'y':'x'}">${(+v).toFixed(2)}</span>`;return'<span class="mk u">無</span>'}
+function predCell(p){if(p==null||p==='')return'–';const s=String(p);if(s.length<=40&&!s.includes('\n'))return esc(s);
+  return`<details><summary>${esc(s.replace(/\s+/g,' ').slice(0,40))}… ▸</summary><pre>${esc(s)}</pre></details>`}
 
 function render(){
   document.documentElement.style.setProperty('--fs',fs+'px');
   const it=view[pos];
   $('progTxt').textContent=view.length?`第 ${pos+1} / ${view.length.toLocaleString()} 題`:'沒有符合的題目';
   $('progBar').style.width=view.length?((pos+1)/view.length*100)+'%':'0';
-  if(!it){['qNo','qId','qSubj','qDiff','qText','qTail','qRaw','qRate','qRateSub'].forEach(i=>$(i).textContent='');$('qText').textContent='沒有符合篩選條件的題目。';$('qOpts').innerHTML='';$('mBody').innerHTML='';$('gold').textContent='–';return}
-  store.set('pos',pos);
+  if(!it){['qNo','qId','qSubj','qDiff','qTail','qRaw','qRate','qRateSub','goldSrc'].forEach(i=>$(i).textContent='');$('qText').textContent='沒有符合篩選條件的題目。';$('qOpts').innerHTML='';$('mBody').innerHTML='';$('gold').textContent='–';$('goldTxt').hidden=true;$('cheap').hidden=true;return}
+  store.set('pos_'+(CUR||''),pos);
   const[c,n]=count(it);const f=it._f;
   $('qNo').textContent=`第 ${pos+1} / ${view.length.toLocaleString()} 題`;
   $('qId').textContent=it.id;$('qSubj').textContent=it.subject||'未分類';
@@ -281,37 +310,108 @@ function render(){
   $('qDiff').textContent=`難度：${dl}`;$('qDiff').style.color=color(f);
   const P=parse(it.prompt);
   $('qText').textContent=P.q;$('qTail').textContent=P.tail;$('qRaw').textContent=it.prompt;
-  const votes={};D.models.forEach(m=>{const k=it.picks[m];if(k)votes[k]=(votes[k]||0)+1});
-  $('qOpts').innerHTML=P.opts.map(o=>`<li class="${o.k===it.gold?'gold':''}"><b>${esc(o.k)}</b><span>${esc(o.t)}${o.k===it.gold?' <span class="chip g" style="margin-left:6px">正解</span>':''}</span><small>${votes[o.k]?votes[o.k]+' 個模型選':''}</small></li>`).join('');
-  const g=$('gold');g.textContent=it.gold||'無法反推';g.className='big'+(it.gold?'':' na');
-  $('qRate').textContent=n?`${c} / ${n} 個模型答對`:'無作答資料';
-  $('qRateSub').textContent=n?`本題答對率 ${(c/n*100).toFixed(0)}%`+(it.gold?'':'（沒有模型答對，正解無法從資料反推）'):'';
+  const votes={};D.models.forEach(m=>{const k=it.picks[m];if(k&&k.length<=3)votes[k.trim()]=(votes[k.trim()]||0)+1});
+  const gl=(it.gold||'').trim();
+  $('qOpts').innerHTML=P.opts.map(o=>`<li class="${o.k===gl?'gold':''}"><b>${esc(o.k)}</b><span>${esc(o.t)}${o.k===gl?' <span class="chip g" style="margin-left:6px">正解</span>':''}</span><small>${votes[o.k]?votes[o.k]+' 個模型選':''}</small></li>`).join('');
+  const shortGold=gl&&gl.length<=6&&!gl.includes('\n');
+  const g=$('gold');g.hidden=!shortGold&&!!gl;g.textContent=shortGold?gl:(gl?'':'無');g.className='big'+(shortGold?'':' na');g.style.fontSize=shortGold?(gl.length<=2?'':gl.length<=4?'30px':'22px'):'';
+  $('keyBox').classList.toggle('long',!shortGold&&!!gl);
+  $('goldTxt').hidden=shortGold||!gl;$('goldTxt').textContent=gl;
+  $('qRate').textContent=n?(D.kind==='mmlu'||D.models.every(m=>!isNum(it.results[m])||it.results[m]===0||it.results[m]===1)?`${Math.round(c)} / ${n} 個模型答對`:`平均得分 ${(c/n).toFixed(2)}`):'無作答資料';
+  $('qRateSub').textContent=n?`本題答對率 ${(c/n*100).toFixed(0)}%`:'';
+  $('goldSrc').textContent=it.goldSrc==='m'?'正解來源：原版 MMLU（cais/mmlu）':it.goldSrc==='v'?'正解來源：由答對模型的選擇反推（未比對到原版題目）':D.kind==='lrb'?'正解來源：LLMRouterBench 的 ground_truth':'';
   $('qBar').style.width=n?(c/n*100)+'%':'0';
-  $('goldSrc').textContent=it.goldSrc==='m'?'正解來源：原版 MMLU（cais/mmlu）':it.goldSrc==='v'?'正解來源：由答對模型的選擇反推（未比對到原版題目）':'';
+  if(D.hasCost){const ok=D.models.filter(m=>it.results[m]>=1&&isNum(it.costs[m])).sort((a,b)=>it.costs[a]-it.costs[b]);
+    const all=D.models.filter(m=>isNum(it.costs[m])).map(m=>it.costs[m]);
+    $('cheap').hidden=false;
+    $('cheap').innerHTML=ok.length?`最便宜的答對模型：<b>${esc(short(ok[0]))}</b>（${fmtCost(it.costs[ok[0]])}）；本題各模型成本 ${fmtCost(Math.min(...all))} – ${fmtCost(Math.max(...all))}`:'本題沒有模型拿到滿分，無法給出最便宜的答對模型。';
+  }else $('cheap').hidden=true;
   const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
-  $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];const pk=it.picks[m];
-    const mk=v===1?'<span class="mk y">✓ 對</span>':v===0?'<span class="mk x">✗ 錯</span>':'<span class="mk u">無</span>';
-    return`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="n">${esc(pk||'–')}</td><td>${mk}</td><td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
+  $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];
+    return`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
   if($('mapDlg').open)markMap();
 }
 
-/* ---------- map & overview ---------- */
+/* ---------- map ---------- */
 function buildMap(){
   const lim=view.slice(0,6000);
-  $('mapGrid').innerHTML=lim.map((it,i)=>`<button class="cell" data-i="${i}" style="background:${color(it._f)}" title="${esc(it.id)} · ${it._f==null?'無資料':Math.round(it._f*100)+'%'}" aria-label="第 ${i+1} 題"></button>`).join('')+(view.length>6000?`<p class="mut" style="grid-column:1/-1">只顯示前 6000 題，請用科目或難度篩選縮小範圍。</p>`:'');
+  $('mapGrid').innerHTML=lim.map((it,i)=>`<button class="cell" data-i="${i}" style="background:${color(it._f)}" title="${esc(it.id)} · ${it._f==null?'無資料':Math.round(it._f*100)+'%'}" aria-label="第 ${i+1} 題"></button>`).join('')+(view.length>6000?`<p class="mut" style="grid-column:1/-1">只顯示前 6000 題，請用篩選縮小範圍。</p>`:'');
   markMap();
 }
 function markMap(){$('mapGrid').querySelectorAll('.cell.cur').forEach(e=>e.classList.remove('cur'));const c=$('mapGrid').querySelector(`[data-i="${pos}"]`);if(c)c.classList.add('cur')}
+
+/* ---------- overview ---------- */
+function lrbEntries(){return (MAN?.datasets||[]).filter(d=>d.summary)}
+function allAvg(){const E=lrbEntries();const ms=[...new Set(E.flatMap(e=>Object.keys(e.summary)))];
+  return ms.map(m=>{let a=0,na=0,c=0,nc=0;E.forEach(e=>{const s=e.summary[m];if(s&&isNum(s.acc)){a+=s.acc;na++}if(s&&isNum(s.avgCost)){c+=s.avgCost;nc++}});return{m,a:na?a/na:null,avg:nc?c/nc:null,nd:na}})}
+function drawScatter(){
+  const svg=$('pcSvg');const W=svg.clientWidth,H=svg.clientHeight;if(!W)return;
+  const pts=(scMode==='all'?allAvg():accOver(view)).filter(p=>isNum(p.a)&&isNum(p.avg)&&p.avg>0);
+  $('pcNote').textContent=scMode==='all'?`每個模型在 ${lrbEntries().length} 個資料集的答對率平均（各資料集等權）與平均每題成本。`:`目前資料集（${view.length.toLocaleString()} 題）每個模型的答對率與平均每題成本。越靠左上越划算；灰線為效能-成本前緣。`;
+  if(!pts.length){svg.innerHTML='';return}
+  const narrow=W<520,L=narrow?40:56,R=narrow?12:120,T=16,B=44;
+  const lx=pts.map(p=>Math.log10(p.avg));let x0=Math.min(...lx),x1=Math.max(...lx);if(x1-x0<.3){x0-=.15;x1+=.15}const px=(x1-x0)*.08;x0-=px;x1+=px;
+  let y0=Math.min(...pts.map(p=>p.a)),y1=Math.max(...pts.map(p=>p.a));const py=Math.max((y1-y0)*.12,.03);y0=Math.max(0,y0-py);y1=Math.min(1,y1+py);
+  const X=v=>L+(Math.log10(v)-x0)/(x1-x0)*(W-L-R),Y=v=>T+(1-(v-y0)/(y1-y0))*(H-T-B);
+  let g='';
+  const tks=[];for(let e=Math.floor(x0);e<=Math.ceil(x1);e++)for(const k of (x1-x0>2.2?[1]:[1,2,5])){const lv=e+Math.log10(k);if(lv>=x0&&lv<=x1)tks.push(10**lv)}
+  for(const v of tks){const x=X(v);g+=`<line class="ax" x1="${x}" x2="${x}" y1="${T}" y2="${H-B}"/><text class="tk" x="${x}" y="${H-B+16}" text-anchor="middle">${fmtCost(v)}</text>`}
+  const ys=5;for(let i=0;i<=ys;i++){const v=y0+(y1-y0)*i/ys,y=Y(v);g+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${y}" y2="${y}"/><text class="tk" x="${L-6}" y="${y+4}" text-anchor="end">${Math.round(v*100)}%</text>`}
+  g+=`<text class="tk" x="${(L+W-R)/2}" y="${H-8}" text-anchor="middle">平均每題成本（對數尺度）</text>`;
+  const fr=[...pts].sort((a,b)=>a.avg-b.avg);let best=-1;const front=[];fr.forEach(p=>{if(p.a>best){front.push(p);best=p.a}});
+  g+=`<polyline points="${front.map(p=>X(p.avg)+','+Y(p.a)).join(' ')}" fill="none" stroke="var(--mut)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+  const placed=[];
+  pts.sort((a,b)=>b.a-a.a).forEach(p=>{const x=X(p.avg),y=Y(p.a);const onF=front.includes(p);
+    g+=`<circle cx="${x}" cy="${y}" r="${onF?6:5}" fill="${onF?'var(--ok)':'var(--blue)'}" stroke="var(--card)" stroke-width="2"><title>${esc(p.m)}：${(p.a*100).toFixed(1)}%，${fmtCost(p.avg)}/題</title></circle>`;
+    let ly=y+4;while(placed.some(q=>Math.abs(q.y-ly)<13&&Math.abs(q.x-x)<110))ly+=13;placed.push({x,y:ly});
+    const lab=narrow?short(p.m).slice(0,10):short(p.m);const right=x<W-R-10||!narrow;
+    g+=`<text x="${x+9}" y="${ly}" ${right?'':'text-anchor="end"'}>${esc(lab)}</text>`});
+  svg.innerHTML=g;
+}
+const ro=new ResizeObserver(()=>{if($('ovDlg').open&&!$('pcWrap').hidden)drawScatter()});ro.observe($('pcFig'));
 function buildOv(){
   const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
-  $('ovNote').textContent=`依目前篩選的 ${view.length.toLocaleString()} 題計算。資料來源：${D.source||'自訂'}${D.demo?'（示範用亂數，非真實結果）':''}。`;
-  $('ovBody').innerHTML=acc.map(({m,c,n,a})=>`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="n">${c.toLocaleString()} / ${n.toLocaleString()}</td><td style="width:45%"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`).join('');
-  const subs=[...new Set(view.map(i=>i.subject||'未分類'))].sort();const ms=acc.map(x=>x.m);
-  const rows=subs.map(s=>{const L=view.filter(i=>(i.subject||'未分類')===s);const A=accOver(L);const by=Object.fromEntries(A.map(x=>[x.m,x]));
-    return`<tr><td class="s">${esc(s)} <span class="mut">(${L.length})</span></td>${ms.map(m=>{const a=by[m].a;return`<td style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':'#fff'}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`}).join('');
-  $('hm').innerHTML=`<thead><tr><th>科目（題數）</th>${ms.map(m=>`<th title="${esc(m)}">${esc(short(m).slice(0,14))}</th>`).join('')}</tr></thead><tbody>${rows}</tbody>`;
+  $('ovNote').textContent=`依目前篩選的 ${view.length.toLocaleString()} 題計算。資料：${D.source||'自訂'}${D.demo?'（示範用亂數）':''}。`;
+  $('ovHead').innerHTML=`<tr><th>模型</th><th class="n">得分 / 有效題數</th><th>答對率</th>${D.hasCost?'<th class="n">平均每題成本</th><th class="n">總成本</th>':''}</tr>`;
+  $('ovBody').innerHTML=acc.map(({m,c,n,a,avg,cost})=>`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="n">${(+c.toFixed(2)).toLocaleString()} / ${n.toLocaleString()}</td><td style="min-width:180px"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td>${D.hasCost?`<td class="n">${fmtCost(avg)}</td><td class="n">${fmtCost(cost)}</td>`:''}</tr>`).join('');
+  const subs=[...new Set(view.map(i=>i.subject||'未分類'))].sort();
+  $('hmWrap').hidden=subs.length<2;
+  if(subs.length>=2){const ms=acc.map(x=>x.m);
+    const rows=subs.map(s=>{const L=view.filter(i=>(i.subject||'未分類')===s);const by=Object.fromEntries(accOver(L).map(x=>[x.m,x]));
+      return`<tr><td class="s">${esc(s)} <span class="mut">(${L.length})</span></td>${ms.map(m=>{const a=by[m].a;return`<td style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':'#fff'}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`}).join('');
+    $('hm').innerHTML=`<thead><tr><th>科目（題數）</th>${ms.map(m=>`<th title="${esc(m)}">${esc(short(m).slice(0,14))}</th>`).join('')}</tr></thead><tbody>${rows}</tbody>`}
+  const E=lrbEntries();const showAll=D.kind==='lrb'&&E.length>1;
+  $('allWrap').hidden=!showAll;$('scAll').hidden=!(E.length>1);$('scAll').textContent=`${E.length} 個資料集平均`;
+  if(showAll){const AV=allAvg().sort((a,b)=>(b.a??-1)-(a.a??-1));
+    $('allHm').innerHTML=`<thead><tr><th>資料集（題數）</th>${AV.map(x=>`<th title="${esc(x.m)}">${esc(short(x.m).slice(0,14))}</th>`).join('')}</tr></thead><tbody>${E.map(e=>`<tr><td class="s">${esc(e.name)} <span class="mut">(${e.n})</span></td>${AV.map(x=>{const s=e.summary[x.m];const a=s?.acc;return`<td title="${s?fmtCost(s.avgCost)+'/題':''}" style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':'#fff'}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`).join('')}<tr><td class="s"><b>平均</b></td>${AV.map(x=>`<td><b>${x.a==null?'–':Math.round(x.a*100)}</b></td>`).join('')}</tr><tr><td class="s"><b>平均每題成本</b></td>${AV.map(x=>`<td>${fmtCost(x.avg)}</td>`).join('')}</tr></tbody>`}
+  $('pcWrap').hidden=!D.hasCost;
+  if(D.hasCost)requestAnimationFrame(drawScatter);
 }
+$('scCur').onclick=()=>{scMode='cur';$('scCur').setAttribute('aria-pressed','true');$('scAll').setAttribute('aria-pressed','false');drawScatter()};
+$('scAll').onclick=()=>{scMode='all';$('scAll').setAttribute('aria-pressed','true');$('scCur').setAttribute('aria-pressed','false');drawScatter()};
+
+/* ---------- loading ---------- */
+async function loadKey(key){
+  const e=MAN.datasets.find(d=>d.key===key)||MAN.datasets[0];CUR=e.key;
+  $('dsSel').value=e.key;store.set('ds',e.key);if(location.hash!=='#'+e.key)history.replaceState(null,'','#'+e.key);
+  $('main').classList.add('loading');$('sizeChip').textContent='載入中…';
+  try{if(!cache[e.key]){const r=await fetch(e.file);if(!r.ok)throw new Error(r.status);cache[e.key]=await r.json()}
+    $('subjSel').value='';$('diffSel').value='all';$('q').value='';setData(cache[e.key])}
+  catch(err){$('sizeChip').textContent='載入失敗：'+err.message}
+  $('main').classList.remove('loading');
+}
+async function init(){
+  try{const r=await fetch('data/index.json',{cache:'no-cache'});if(!r.ok)throw 0;MAN=await r.json()}
+  catch(e){try{const r=await fetch('data/mmlu.json',{cache:'no-cache'});if(!r.ok)throw 0;MAN={datasets:[{key:'mmlu',bench:'RouterBench',name:'MMLU',file:'data/mmlu.json'}]};cache.mmlu=await r.json()}catch(e2){MAN=null}}
+  if(!MAN){$('dsSel').innerHTML='<option>示範資料</option>';setData(demo());return}
+  const benches=[...new Set(MAN.datasets.map(d=>d.bench))];
+  $('dsSel').innerHTML=benches.map(b=>`<optgroup label="${esc(b)}">${MAN.datasets.filter(d=>d.bench===b).map(d=>`<option value="${esc(d.key)}">${esc(d.name)}${d.n?`（${Number(d.n).toLocaleString()} 題）`:''}</option>`).join('')}</optgroup>`).join('');
+  const h=decodeURIComponent(location.hash.slice(1));
+  await loadKey(MAN.datasets.some(d=>d.key===h)?h:store.get('ds',MAN.datasets[0].key));
+}
+$('dsSel').onchange=()=>loadKey($('dsSel').value);
+addEventListener('hashchange',()=>{const h=decodeURIComponent(location.hash.slice(1));if(MAN&&h!==CUR&&MAN.datasets.some(d=>d.key===h))loadKey(h)});
 
 /* ---------- events ---------- */
 const go=d=>{if(!view.length)return;pos=(pos+d+view.length)%view.length;render()};
@@ -322,17 +422,15 @@ $('fsDn').onclick=()=>{fs=Math.max(13,fs-1);store.set('fs',fs);render()};
 $('subjSel').onchange=()=>applyFilter(false);$('diffSel').onchange=()=>applyFilter(false);
 let qt;$('q').oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>applyFilter(false),200)};
 $('mapBtn').onclick=()=>{buildMap();$('mapDlg').showModal()};
-$('ovBtn').onclick=()=>{buildOv();$('ovDlg').showModal()};
+$('ovBtn').onclick=()=>{$('ovDlg').showModal();buildOv()};
 $('mapGrid').onclick=e=>{const c=e.target.closest('.cell');if(c){pos=+c.dataset.i;render();$('mapDlg').close()}};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close()}));
-$('copyCmd').onclick=async()=>{try{await navigator.clipboard.writeText($('cmdTxt').textContent);$('copyCmd').textContent='已複製'}catch(e){$('copyCmd').textContent='請手動選取複製'}};
 $('loadBtn').onclick=()=>$('fileIn').click();
 async function loadFile(f){
-  if(!f)return;$('srcChip').textContent='讀取中…';
-  try{const d=JSON.parse(await f.text());d.source=d.source||f.name;store.set('pos',0);setData(d)}
-  catch(e){$('srcChip').textContent='載入失敗：'+e.message;$('srcChip').className='chip w'; return}
-  $('srcChip').className='chip b';
+  if(!f)return;$('sizeChip').textContent='讀取中…';
+  try{const d=JSON.parse(await f.text());CUR='file';setData(d);$('dsSel').insertAdjacentHTML('beforeend',`<option value="" selected>${esc(f.name)}</option>`)}
+  catch(e){$('sizeChip').textContent='載入失敗：'+e.message}
 }
 $('fileIn').onchange=e=>loadFile(e.target.files[0]);
 let dc=0;
@@ -340,13 +438,10 @@ addEventListener('dragenter',e=>{e.preventDefault();dc++;$('drop').classList.add
 addEventListener('dragleave',()=>{if(--dc<=0){dc=0;$('drop').classList.remove('on')}});
 addEventListener('dragover',e=>e.preventDefault());
 addEventListener('drop',e=>{e.preventDefault();dc=0;$('drop').classList.remove('on');loadFile(e.dataTransfer.files[0])});
-addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
+addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea,summary')||document.querySelector('dialog[open]'))return;
   if(e.key==='ArrowRight')go(1);else if(e.key==='ArrowLeft')go(-1);else if(e.key==='r'||e.key==='R')$('randBtn').click()});
 
-(async()=>{
-  try{const r=await fetch('data/mmlu.json',{cache:'no-cache'});if(!r.ok)throw 0;$('srcChip').textContent='下載真實資料中…';setData(await r.json())}
-  catch(e){setData(demo())}
-})();
+init();
 }
 </script>
 </body>
