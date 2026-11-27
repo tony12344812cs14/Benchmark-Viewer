@@ -27,6 +27,8 @@ NAMES = {"aime": "AIME", "livemathbench": "LiveMathBench", "gpqa": "GPQA", "hle"
          "livecodebench": "LiveCodeBench", "mmlupro": "MMLU-Pro", "swe-bench": "SWE-Bench",
          "simpleqa": "SimpleQA", "tau2": "τ²-Bench", "arenahard": "ArenaHard"}
 LIM_Q, LIM_P, LIM_G = 6000, 1500, 1500
+OPTLINE = re.compile(r"(?m)^\s*\(?[A-J][\.\):]\s")
+GRADE = {"A": "判定正確", "B": "判定錯誤", "C": "未作答"}
 
 
 def s(v):
@@ -79,10 +81,20 @@ def main():
             recs = {}
             for r in data.get("records", []):
                 sc = r.get("score")
-                recs[r["index"]] = (trim(r.get("origin_query") or r.get("prompt"), LIM_Q),
+                q = s(r.get("origin_query") or r.get("prompt"))
+                pr = s(r.get("prompt"))
+                if pr and OPTLINE.search(pr) and not OPTLINE.search(q):
+                    q = pr  # GPQA / MMLU-Pro：選項只在 prompt 裡
+                pred = r.get("prediction")
+                if ds == "simpleqa":  # prediction 是評審的等級字母，改顯示模型原始回答
+                    g = s(pred).strip()
+                    pred = f"[評審：{GRADE.get(g, g)}] " + s(r.get("raw_output"))
+                elif ds == "arenahard" and r.get("raw_output"):
+                    pred = r.get("raw_output")
+                recs[r["index"]] = (trim(q, LIM_Q),
                                     trim(r.get("ground_truth"), LIM_G),
                                     None if sc is None else round(float(sc), 4),
-                                    trim(r.get("prediction"), LIM_P),
+                                    trim(pred, LIM_P),
                                     r.get("cost"))
             best[key] = (ts, recs)
     print(f"讀了 {n_json} 個 JSON；符合條件的 dataset/split/model 組合：{len(best)}")
