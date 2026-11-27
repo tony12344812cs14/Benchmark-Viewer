@@ -51,7 +51,7 @@ jobs:
           python routerbench_to_json.py hf_data/routerbench/routerbench_0shot.pkl \
             --mmlu-dir hf_data/mmlu -o _site/data/mmlu.json
           python lrb_to_json.py hf_data/lrb/bench-release.tar.gz -o _site/data
-          cp index.html README.md routerbench_to_json.py lrb_to_json.py _site/
+          cp index.html models.json README.md routerbench_to_json.py lrb_to_json.py _site/
 
       - uses: actions/upload-pages-artifact@v3
         with:
