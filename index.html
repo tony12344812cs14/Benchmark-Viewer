@@ -111,6 +111,14 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 #q{min-width:180px}
 .q{overflow-wrap:anywhere}
 .loading{opacity:.55;pointer-events:none}
+.bihead{font-size:13px;font-weight:700;color:var(--blue);margin:0 0 6px}
+.zhbox{border-bottom:1px dashed var(--line);padding-bottom:14px;margin-bottom:14px}
+.birow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;padding:10px 0;border-bottom:1px solid var(--line)}
+.birow>div{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.75}
+.bicols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;position:sticky;top:0}
+@media(max-width:700px){.birow,.bicols{grid-template-columns:minmax(0,1fr)}}
+#rawDlg.wide{width:min(1400px,96vw)}
+#biBtn[aria-pressed=true]{background:var(--blue);color:#fff;border-color:var(--blue)}
 .rawb{margin-top:4px;display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--blue);min-height:28px;white-space:nowrap}
 .rawb:hover{border-color:var(--blue)}
 .rawtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.75}
@@ -137,6 +145,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
     <button class="btn" id="randBtn" title="快捷鍵 R">隨機</button>
     <button class="btn" id="mapBtn">題目總覽地圖</button>
     <button class="btn" id="ovBtn">模型表現總覽</button>
+    <button class="btn" id="biBtn" aria-pressed="false" title="題目與完整回答加上中文翻譯">中英對照</button>
     <button class="btn" id="loadBtn">載入 JSON</button>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
     <select id="subjSel" aria-label="科目"></select>
@@ -165,6 +174,8 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
       <span class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn" id="fsDn" aria-label="縮小字體">A-</button><button class="btn" id="fsUp" aria-label="放大字體">A+</button></span>
     </div>
     <div class="cb">
+      <div id="qZh" class="zhbox" hidden></div>
+      <div class="bihead" id="enHead" hidden>English 原文</div>
       <div class="q" id="qText"></div>
       <ul class="opts" id="qOpts"></ul>
       <div class="tail" id="qTail"></div>
@@ -289,7 +300,7 @@ function setData(d){
   $('focSel').value=D.models.includes(prevF)?prevF:'';
   document.querySelectorAll('.costCol').forEach(e=>e.hidden=!D.hasCost);
   $('mNote').textContent=D.kind==='mmlu'?'模型依整體答對率排序。「作答」是從模型回覆中抽出的選項字母；整體答對率只計算有結果的題目。'
-    :'模型依整體答對率排序。「作答」是模型的最終答案（過長已截斷，點開看全文）；得分非 0/1 時顯示分數；成本為官方紀錄的該題 API 費用（美元）；成本倍數 = 本題成本 ÷ 本題最便宜模型的成本（最便宜為 1×）。';
+    :'模型依本題成本由高到低排序。「作答」是模型的最終答案（過長已截斷，點開看全文）；得分非 0/1 時顯示分數；成本為官方紀錄的該題 API 費用（美元）；成本倍數 = 本題成本 ÷ 本題最便宜模型的成本（最便宜為 1×）。';
   applyFilter(true);
 }
 function applyFilter(reset){
@@ -368,11 +379,13 @@ function render(){
   const pc=D.models.map(m=>it.costs[m]).filter(c=>isNum(c)&&c>0);const minC=pc.length?Math.min(...pc):null;
   const fx=c=>{if(!isNum(c)||!minC)return'–';const r=c/minC;return r===1?'<b>1×</b>':(r<10?r.toFixed(1):Math.round(r).toLocaleString())+'×'};
   const hasRaw=!!curEntry()?.raw;
-  const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
+  const acc=accOver(view);const cv=m=>isNum(it.costs[m])?it.costs[m]:-1;
+  if(D.hasCost)acc.sort((a,b)=>cv(b.m)-cv(a.m));else acc.sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
   $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];
     return`<tr${m===$('focSel').value?' class="foc"':''}><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}${hasRaw?`<br><button class="rawb" data-m="${esc(m)}">完整回答</button>`:''}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
   math($('qText'));math($('qOpts'));math($('qTail'));math($('goldTxt'));math($('mBody'));
+  renderBi(it);
   if($('mapDlg').open)markMap();
 }
 
@@ -383,19 +396,70 @@ const safeName=m=>String(m).replace(/[^A-Za-z0-9_.-]/g,'_');
 const chunkOf=id=>/^\d+$/.test(id)?String(Math.floor(+id/50)):'h'+([...id].reduce((a,c)=>a+c.codePointAt(0),0)%64);
 async function showRaw(m){
   const e=curEntry(),it=view[pos];if(!e?.raw||!it)return;
-  $('rawTitle').textContent=`${short(m)} 的完整回答`;$('rawMeta').textContent=`題目 ${it.id} · ${D.source||''}`;
+  $('rawTitle').textContent=`${short(m)} 的完整回答`;$('rawTitle').dataset.k=m+'|'+it.id;$('rawMeta').textContent=`題目 ${it.id} · ${D.source||''}`;
   $('rawBody').innerHTML='<p class="mut">載入中…</p>';$('rawDlg').showModal();
   const url=`${e.raw}/${safeName(m)}/${chunkOf(String(it.id))}.json`;
   try{if(!(url in rawCache)){const r=await fetch(url,{cache:'no-cache'});rawCache[url]=r.ok?await r.json():{}}
     const t=rawCache[url][String(it.id)];
     if(!t){$('rawBody').innerHTML='<p class="mut">原始資料裡沒有這個模型在這一題的完整回答。</p>';return}
     const code=/LiveCodeBench|SWE-Bench|τ²/.test(D.source||'');
-    $('rawBody').innerHTML=code?`<pre class="rawpre">${esc(t)}</pre>`:`<div class="rawtxt">${texHTML(t)}</div>`;
-    if(!code)math($('rawBody'));
     $('rawMeta').textContent+=` · ${t.length.toLocaleString()} 字`;
+    $('rawDlg').classList.toggle('wide',BI&&!code);
+    if(BI&&!code){rawBi(t,m,it.id);return}
+    $('rawBody').innerHTML=(BI&&code?'<p class="mut">程式類資料集的回答多為程式碼，不提供翻譯。</p>':'')+(code?`<pre class="rawpre">${esc(t)}</pre>`:`<div class="rawtxt">${texHTML(t)}</div>`);
+    if(!code)math($('rawBody'));
   }catch(err){$('rawBody').innerHTML='<p class="mut">載入失敗：'+esc(err.message)+'</p>'}
 }
 $('mBody').addEventListener('click',e=>{const b=e.target.closest('.rawb');if(b)showRaw(b.dataset.m)});
+
+/* ---------- translation (中英對照) ---------- */
+let BI=store.get('bi',false),trProv=null,trObj=null,trBusy=null;const trCache=new Map();
+const MASKRE=/```[\s\S]*?```|`[^`\n]+`|\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$\n]{1,200}?\$/g;
+async function trInit(){
+  if(trProv)return trProv;if(trBusy)return trBusy;
+  trBusy=(async()=>{
+    try{if('Translator' in self){const a=await Translator.availability({sourceLanguage:'en',targetLanguage:'zh-Hant'});
+      if(a!=='unavailable'){trObj=await Translator.create({sourceLanguage:'en',targetLanguage:'zh-Hant',monitor(mo){mo.addEventListener('downloadprogress',e=>{const b=$('qZh');if(b)b.innerHTML=`<p class="mut">下載 Chrome 翻譯模型中… ${Math.round(e.loaded*100)}%</p>`})}});return trProv='chrome'}}}catch(e){}
+    return trProv='google'})();
+  return trBusy}
+async function trRaw(t){
+  if(trProv==='chrome'){try{return await trObj.translate(t)}catch(e){trProv='google'}}
+  const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-TW&dt=t&q='+encodeURIComponent(t));
+  if(!r.ok)throw new Error('翻譯服務回應 '+r.status);const j=await r.json();return (j[0]||[]).map(x=>x[0]).join('')}
+function pieces(s,n){if(s.length<=n)return[s];const out=[];let cur='';for(const part of s.split(/(?<=[.!?。;:])\s+|(?=\n)/)){if((cur+part).length>n&&cur){out.push(cur);cur=''}cur+=(cur&&!part.startsWith('\n')?' ':'')+part}if(cur)out.push(cur);return out.flatMap(x=>x.length>n?x.match(new RegExp('[\\s\\S]{1,'+n+'}','g')):[x])}
+async function tr(text){
+  text=String(text??'');if(!text.trim()||!/[A-Za-z]{2}/.test(text))return text;if(trCache.has(text))return trCache.get(text);
+  const ph=[];const masked=text.replace(MASKRE,m=>{ph.push(m);return`⟦${ph.length-1}⟧`});
+  const outs=[];for(const p of masked.split(/(\n{2,})/)){if(!/[A-Za-z]{2}/.test(p)){outs.push(p);continue}const ps=[];for(const c of pieces(p,1500))ps.push(await trRaw(c));outs.push(ps.join(''))}
+  const res=outs.join('').replace(/⟦\s*(\d+)\s*⟧/g,(_,i)=>ph[+i]??'');
+  trCache.set(text,res);return res}
+const provName=()=>trProv==='chrome'?'Chrome 內建翻譯':'Google 翻譯';
+async function renderBi(it){
+  const box=$('qZh');$('enHead').hidden=!BI;
+  if(!BI){box.hidden=true;return}
+  box.hidden=false;const id=it.id;box.innerHTML='<p class="mut">翻譯中…</p>';
+  try{await trInit();const P=parse(it.prompt);
+    const q=await tr(P.q);const ops=[];for(const o of P.opts)ops.push(await tr(o.t));const tail=P.tail?await tr(P.tail):'';
+    if(view[pos]?.id!==id)return;const gl=(it.gold||'').trim();
+    box.innerHTML=`<div class="bihead">中文（${provName()}，僅供參考）</div><div class="q">${texHTML(q)}</div>`+
+      (P.opts.length?`<ul class="opts">${P.opts.map((o,i)=>`<li class="${o.k===gl?'gold':''}"><b>${esc(o.k)}</b><span>${texHTML(asMath(ops[i]))}</span><small></small></li>`).join('')}</ul>`:'')+
+      (tail?`<div class="tail">${texHTML(tail)}</div>`:'');
+    math(box)}
+  catch(e){if(view[pos]?.id===id)box.innerHTML='<p class="mut">翻譯失敗：'+esc(e.message)+'</p>'}
+}
+async function rawBi(t,m,id){
+  const paras=t.split(/\n{2,}/);const body=$('rawBody');
+  body.innerHTML=`<div class="bicols"><div class="bihead">中文（翻譯中…）</div><div class="bihead">English 原文</div></div>`+paras.map((p,i)=>`<div class="birow"><div data-zh="${i}" class="mut">…</div><div>${texHTML(p)}</div></div>`).join('');
+  math(body);
+  try{await trInit();body.querySelector('.bicols .bihead').textContent=`中文（${provName()}，僅供參考）`;
+    for(let i=0;i<paras.length;i++){
+      if(!$('rawDlg').open||$('rawTitle').dataset.k!==m+'|'+id)return;
+      const z=await tr(paras[i]);const c=body.querySelector(`[data-zh="${i}"]`);if(!c)return;
+      c.className='';c.innerHTML=texHTML(z);math(c)}}
+  catch(e){body.querySelector('.bicols .bihead').textContent='中文（翻譯失敗：'+e.message+'）'}
+}
+$('biBtn').setAttribute('aria-pressed',String(BI));
+$('biBtn').onclick=()=>{BI=!BI;store.set('bi',BI);$('biBtn').setAttribute('aria-pressed',String(BI));if(BI)trInit();if(D)render()};
 
 /* ---------- map ---------- */
 function buildMap(){
