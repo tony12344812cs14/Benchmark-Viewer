@@ -13,6 +13,7 @@
 - 比對不到的題目，改用「答對（score=1）的模型所選字母」多數決反推；仍無法判斷則為 null。
 """
 import argparse
+import ast
 import glob
 import json
 import os
@@ -45,6 +46,14 @@ def norm(s):
 def prompt_text(p):
     """RouterBench 的 prompt 可能是 list（例如 ['...']），統一轉成字串。"""
     if isinstance(p, str):
+        s = p.strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                v = ast.literal_eval(s)
+                if isinstance(v, (list, tuple)):
+                    return "\n".join(str(x) for x in v)
+            except (ValueError, SyntaxError):
+                pass
         return p
     try:
         return "\n".join(str(x) for x in p)
