@@ -6,6 +6,9 @@
 <title>LLM Benchmark 逐題瀏覽</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="window.__mathReady&&window.__mathReady()"></script>
 <style>
 /* VOICE: a researcher's annotation console, calm and exact, same family as the 難度評估介面
    IDEA: an exam paper on the left, the grading sheet (answer key + every model's mark) on the right
@@ -94,6 +97,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 .pred{max-width:260px;font-size:14px;overflow-wrap:anywhere}
 .pred details summary{cursor:pointer;color:var(--blue);list-style:none}
 .pred details summary::-webkit-details-marker{display:none}
+.pred .pb{white-space:pre-wrap;font-size:13px;max-height:260px;overflow:auto;margin:6px 0 0;background:var(--bg);padding:8px;border-radius:8px}
 .pred pre{white-space:pre-wrap;font-size:13px;max-height:260px;overflow:auto;margin:6px 0 0;background:var(--bg);padding:8px;border-radius:8px}
 .cheap{margin-top:10px;font-size:14px;padding:8px 12px;border-radius:10px;background:var(--blueb);color:var(--ink)}
 .cheap b{color:var(--blue)}
@@ -107,6 +111,9 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 #q{min-width:180px}
 .q{overflow-wrap:anywhere}
 .loading{opacity:.55;pointer-events:none}
+.katex-display{margin:.5em 0;overflow-x:auto;overflow-y:hidden;padding:2px 0}
+.katex{font-size:1.08em}
+.big .katex{font-size:.8em}
 </style>
 </head>
 <body>
@@ -292,9 +299,24 @@ function parse(p){
   if(opts.length<2)return{q:p,opts:[],tail:''};
   return{q:lines.slice(0,first).join('\n').trim(),opts,tail:lines.slice(last+1).join('\n').trim()};
 }
+const MATHOPT={delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false},{left:'$',right:'$',display:false}],throwOnError:false,ignoredTags:['script','noscript','style','textarea','pre','code','option','summary'],ignoredClasses:['nomath']};
+function math(el){if(window.renderMathInElement&&el)try{renderMathInElement(el,MATHOPT)}catch(e){}}
+const bareTex=s=>/\\[a-zA-Z]+|\^|_\{/.test(s)&&!/[$]|\\\(|\\\[/.test(s);
+const asMath=s=>bareTex(s)?'$'+s+'$':s;
+function texHTML(s){s=String(s??'');let out='',i=0;
+  while(i<s.length){const c=s[i];
+    if(c==='$'&&s[i+1]!=='$'&&s[i-1]!=='$'&&s[i-1]!=='\\'){
+      const j=s.indexOf('$',i+1);const rest=s.slice(i+1);const inner=j<0?'':s.slice(i+1,j);
+      const cur=/^LETTER\b/.test(rest)||j<0||(/^\d/.test(rest)&&(inner.length>60||/[A-Za-z]{2,}\s+[A-Za-z]{2,}\s+[A-Za-z]{2,}/.test(inner)));
+      if(cur){out+='<span class="nomath">$</span>';i++;continue}
+      out+=esc(s.slice(i,j+1));i=j+1;continue}
+    out+=esc(c);i++}
+  return out}
+window.__mathReady=()=>{if(D)render()};
 function mark(v){if(v===1)return'<span class="mk y">✓ 對</span>';if(v===0)return'<span class="mk x">✗ 錯</span>';if(isNum(v))return`<span class="mk ${v>=.5?'y':'x'}">${(+v).toFixed(2)}</span>`;return'<span class="mk u">無</span>'}
-function predCell(p){if(p==null||p==='')return'–';const s=String(p);if(s.length<=40&&!s.includes('\n'))return esc(s);
-  return`<details><summary>${esc(s.replace(/\s+/g,' ').slice(0,40))}… ▸</summary><pre>${esc(s)}</pre></details>`}
+function predCell(p){if(p==null||p==='')return'–';const s=String(p);if(s.length<=40&&!s.includes('\n'))return esc(asMath(s));
+  const body=/LiveCodeBench|SWE-Bench|τ²/.test(D?.source||'')?`<pre>${esc(s)}</pre>`:`<div class="pb">${texHTML(s)}</div>`;
+  return`<details><summary>${esc(s.replace(/\s+/g,' ').slice(0,40))}… ▸</summary>${body}</details>`}
 
 function render(){
   document.documentElement.style.setProperty('--fs',fs+'px');
@@ -309,14 +331,14 @@ function render(){
   const dl=f==null?'無資料':f===0?'無模型答對':f<=1/3?'難':f<2/3?'中':'易';
   $('qDiff').textContent=`難度：${dl}`;$('qDiff').style.color=color(f);
   const P=parse(it.prompt);
-  $('qText').textContent=P.q;$('qTail').textContent=P.tail;$('qRaw').textContent=it.prompt;
+  $('qText').innerHTML=texHTML(P.q);$('qTail').innerHTML=texHTML(P.tail);$('qRaw').textContent=it.prompt;
   const votes={};D.models.forEach(m=>{const k=it.picks[m];if(k&&k.length<=3)votes[k.trim()]=(votes[k.trim()]||0)+1});
   const gl=(it.gold||'').trim();
-  $('qOpts').innerHTML=P.opts.map(o=>`<li class="${o.k===gl?'gold':''}"><b>${esc(o.k)}</b><span>${esc(o.t)}${o.k===gl?' <span class="chip g" style="margin-left:6px">正解</span>':''}</span><small>${votes[o.k]?votes[o.k]+' 個模型選':''}</small></li>`).join('');
-  const shortGold=gl&&gl.length<=6&&!gl.includes('\n');
+  $('qOpts').innerHTML=P.opts.map(o=>`<li class="${o.k===gl?'gold':''}"><b>${esc(o.k)}</b><span>${texHTML(asMath(o.t))}${o.k===gl?' <span class="chip g" style="margin-left:6px">正解</span>':''}</span><small>${votes[o.k]?votes[o.k]+' 個模型選':''}</small></li>`).join('');
+  const shortGold=gl&&gl.length<=6&&!gl.includes('\n')&&!/[\\$^_]/.test(gl);
   const g=$('gold');g.hidden=!shortGold&&!!gl;g.textContent=shortGold?gl:(gl?'':'無');g.className='big'+(shortGold?'':' na');g.style.fontSize=shortGold?(gl.length<=2?'':gl.length<=4?'30px':'22px'):'';
   $('keyBox').classList.toggle('long',!shortGold&&!!gl);
-  $('goldTxt').hidden=shortGold||!gl;$('goldTxt').textContent=gl;
+  $('goldTxt').hidden=shortGold||!gl;$('goldTxt').textContent=asMath(gl);
   $('qRate').textContent=n?(D.kind==='mmlu'||D.models.every(m=>!isNum(it.results[m])||it.results[m]===0||it.results[m]===1)?`${Math.round(c)} / ${n} 個模型答對`:`平均得分 ${(c/n).toFixed(2)}`):'無作答資料';
   $('qRateSub').textContent=n?`本題答對率 ${(c/n*100).toFixed(0)}%`:'';
   $('goldSrc').textContent=it.goldSrc==='m'?'正解來源：原版 MMLU（cais/mmlu）':it.goldSrc==='v'?'正解來源：由答對模型的選擇反推（未比對到原版題目）':D.kind==='lrb'?'正解來源：LLMRouterBench 的 ground_truth':'';
@@ -330,6 +352,7 @@ function render(){
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
   $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];
     return`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
+  math($('qText'));math($('qOpts'));math($('qTail'));math($('goldTxt'));math($('mBody'));
   if($('mapDlg').open)markMap();
 }
 
