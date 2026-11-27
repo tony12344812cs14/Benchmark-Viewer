@@ -161,6 +161,7 @@ def main():
         for m in models:
             t = row.get(f"{m}|model_response")
             if isinstance(t, str) and t.strip():
+                t = prompt_text(t)  # 回答同樣可能是 "['...']" 形式
                 raws[m][sid] = t if len(t) <= 30000 else t[:30000] + f"\n…（已截斷，原長 {len(t)} 字）"
         items.append((sid, row["subject"], prompt_text(row.get("prompt", "")), gold, gsrc, res, picks))
     print("正解來源統計（m=原版 MMLU, v=模型多數決）：", dict(src_count))
