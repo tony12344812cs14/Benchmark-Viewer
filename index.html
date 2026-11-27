@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LLM Benchmark 逐題瀏覽</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="window.__mathReady&&window.__mathReady()"></script>
@@ -163,6 +163,72 @@ th .info{margin-left:4px;vertical-align:1px}
 @media(max-width:700px){.birow,.bicols{grid-template-columns:minmax(0,1fr)}}
 #rawDlg.wide{width:min(1400px,96vw)}
 #biBtn[aria-pressed=true]{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ===== 嚴謹版面：瑞士網格 + Tufte（覆寫上方預設樣式） ===== */
+:root{--bg:light-dark(#f6f4ef,#141413);--card:light-dark(#f6f4ef,#141413);--ink:light-dark(#1b1b1a,#e9e6df);--mut:light-dark(#6b675f,#a29d93);--line:light-dark(#d9d4c9,#34322e);--blue:light-dark(#1b1b1a,#e9e6df);--blueb:light-dark(#ebe7de,#22211e);--ok:light-dark(#2e5e3e,#8fc39f);--okb:light-dark(#e3e9df,#1d2a20);--bad:light-dark(#a3362a,#e58b7d);--badb:light-dark(#f1e2dd,#2d1c19);--acc:light-dark(#a3362a,#e58b7d);--serif:"Noto Serif TC","Songti TC",serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+body{font-family:"Noto Sans TC",system-ui,sans-serif;letter-spacing:.01em}
+.brand,.ch h2,.dh h3,.hero h2,#helpDlg .db h4,.stat,.big,.t1 td:first-child{font-family:var(--serif)}
+.num,td.n,#progTxt,#sizeChip,.kbd,.jump input,.opts li b,.mk,.hm td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{background:var(--bg);border-bottom:1.5px solid var(--ink);padding-top:14px}
+.brand{font-size:20px;font-weight:600;letter-spacing:.02em}.brand .logo{display:none}
+.crumb{font-size:13px}.crumb a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.btn{border-radius:2px;border:1px solid var(--line);background:transparent;min-height:38px;padding:0 14px;font-weight:500}
+.btn:hover{border-color:var(--ink);background:transparent}
+.btn.p{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.ghost{border-color:transparent;text-decoration:underline;text-underline-offset:3px}
+select,input[type=search],.jump input,#dsSel{border-radius:2px;min-height:38px;background:transparent;border:1px solid var(--line);color:var(--ink)}
+#dsSel{border-color:var(--ink);font-weight:600}
+.grp{border-left:.5px solid var(--line)}
+.chip,.chip.b,.chip.g{border:0;border-radius:0;background:transparent;padding:0;font-size:13px;color:var(--mut);font-weight:400}
+.ch .chip+.chip::before{content:'·';margin-right:8px;color:var(--line)}
+.bar{height:2px;border-radius:0;background:var(--line)}.bar i{background:var(--ink)}
+.hb span{height:3px;border-radius:0;background:var(--line)}.hb span i{background:var(--ink)}
+main{gap:44px;padding-top:24px}
+.card{background:transparent;border:0;border-top:1.5px solid var(--ink);border-radius:0}
+.ch{border-bottom:.5px solid var(--line);padding:10px 0}
+.ch h2{font-size:19px;font-weight:600}
+.sec{font-family:var(--mono);font-size:12px;color:var(--acc);letter-spacing:.06em;margin-right:4px}
+.cb{padding:16px 0}
+.opts li{border:0;border-left:2px solid transparent;border-radius:0;padding:6px 12px;gap:12px;grid-template-columns:20px minmax(0,1fr) auto}
+.opts li b{background:transparent;width:auto;height:auto;color:var(--mut);font-weight:500}
+.opts li.gold{background:transparent;border-left-color:var(--acc)}.opts li.gold b{background:transparent;color:var(--acc)}
+.opts .chip.g{color:var(--acc);font-weight:600}
+.big{width:auto;height:auto;min-width:0;padding:2px 18px;font-size:46px;line-height:1.05;background:transparent;color:var(--ink);border-left:3px solid var(--acc);border-radius:0;place-items:start}
+.big.na{border-left-color:var(--line);color:var(--mut);font-size:18px}
+.stat{font-size:clamp(22px,2.6vw,30px);font-weight:600}
+.goldtxt{background:transparent;border:0;border-left:3px solid var(--acc);border-radius:0}
+.cheap{background:transparent;border-radius:0;border-top:.5px solid var(--line);padding:10px 0 0}.cheap b{color:var(--acc)}
+.mk,.mk.y,.mk.x,.mk.u{background:transparent!important;min-width:0;padding:0;font-weight:600}.mk.y{color:var(--ok)}.mk.x{color:var(--bad)}.mk.u{color:var(--mut)}
+table{font-size:14px}
+.card table,dialog .db>table,dialog .scroll>table{border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
+th{color:var(--ink);font-weight:600;font-size:13px;border-bottom:.5px solid var(--ink)}
+td{border-bottom:0}
+tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◂ 對照';color:var(--acc)}
+.info{background:transparent;color:var(--mut);width:auto;height:auto;font-size:11px;vertical-align:super;border-radius:0}
+.chips button{border-radius:2px;background:transparent;border:1px solid var(--ink);color:var(--ink)}
+.badge{border-radius:2px;background:var(--ink);color:var(--bg)}
+.filters{background:transparent;border:0;border-top:.5px solid var(--line);border-radius:0;padding:12px 0 4px}
+.tip{background:transparent;border-bottom:.5px solid var(--line)}
+dialog{border-radius:2px;border:1px solid var(--ink);box-shadow:none;background:var(--bg)}
+.dh{background:var(--bg);border-bottom:1.5px solid var(--ink)}
+.rawb{border-radius:2px;background:transparent;color:var(--ink);border:1px solid var(--line)}
+.fig{border:0;border-top:.5px solid var(--line);border-radius:0;background:transparent}
+.seg{border-radius:2px;border:1px solid var(--ink)}.seg button{background:transparent;min-height:36px;color:var(--ink)}.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+details.raw{border:0;border-top:.5px solid var(--line);border-radius:0;padding:8px 0}
+details.raw summary{color:var(--ink)}
+.cell{border-radius:0}
+.zhbox{border:0;padding:0;margin:0 0 10px;font-size:13px}
+.rawtxt>div{margin-bottom:1em}.pend{color:var(--mut)}
+.home{max-width:1080px}
+.hero h2{font-weight:600;font-size:clamp(26px,3.2vw,36px);border-bottom:0}
+.hero p.abstract{color:var(--ink)}.hero p.meta2{margin:0 0 30px;font-size:13px}.abstract{font-family:var(--serif);font-size:16.5px;line-height:1.85;max-width:66ch;margin:14px 0 6px}
+.meta2{font-size:13px;color:var(--mut);margin:0 0 28px}
+.cap{font-size:13px;color:var(--mut);margin:0 0 6px}.cap b{color:var(--ink);font-weight:600}
+.t1{width:100%;border-collapse:collapse;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
+.t1 th{text-align:left}.t1 th.n,.t1 td.n{text-align:right}
+.t1 tbody tr{cursor:pointer}.t1 tbody tr:hover td,.t1 tbody tr:focus-visible td{background:var(--blueb);outline:none}
+.t1 td.grpc{font-size:12px;color:var(--mut);padding-top:14px;cursor:default;background:transparent!important}
+.note2{font-size:12.5px;color:var(--mut);margin:8px 0 0;max-width:80ch}
 .rawb{margin-top:4px;display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--blue);min-height:28px;white-space:nowrap}
 .rawb:hover{border-color:var(--blue)}
 .rawtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.75}
@@ -193,7 +259,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
     </div>
     <div class="grp">
       <button class="btn" id="filtBtn" aria-expanded="false" aria-controls="filters" title="依科目、難度、模型對照、關鍵字篩選（快捷鍵 /）">篩選<span class="badge" id="filtCount" hidden></span></button>
-      <button class="btn" id="biBtn" aria-pressed="false" title="題目與完整回答加上中文翻譯">中英對照</button>
+      <div class="seg" role="group" aria-label="顯示語言" title="切換題目與完整回答的語言；中文為機器翻譯"><button data-lang="en" aria-pressed="true">English</button><button data-lang="zh" aria-pressed="false">中文</button></div>
       <button class="btn" id="ovBtn" title="各模型答對率、成本與效能-成本圖">模型表現總覽</button>
       <button class="btn" id="mapBtn" title="每題一格，依答對比例上色">題目地圖</button>
       <button class="btn ghost" id="linkBtn" title="複製這一題的網址，打開就會直接到這題">複製連結</button>
@@ -223,14 +289,10 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
 
 <section class="home" id="home" hidden>
   <div class="hero">
-    <h2>看清楚每個 LLM 在每一題的表現與成本</h2>
-    <p>把 benchmark 的每一題、正確答案、各模型的回答、對錯與花費放在同一頁，方便比較與分析模型路由（routing）。</p>
+    <h2>LLM Benchmark 逐題資料集</h2>
+    <p class="abstract">本站收錄兩個模型路由（routing）基準：RouterBench 的 MMLU（11 個 2023 年模型）與 LLMRouterBench 效能-成本設定的 10 個資料集（13 個旗艦模型）。每一題都列出正確答案、各模型的回答與得分；LLMRouterBench 另附每題 API 成本，可用來比較效能與花費的取捨。</p>
+    <p class="meta2">使用方式：點選表 1 任一列開啟資料集，以 ← → 逐題瀏覽；按右上角「使用說明」或 ? 鍵查看名詞與快捷鍵。</p>
   </div>
-  <ol class="steps">
-    <li><b>1</b><div><strong>選一個資料集</strong><span>點下方卡片，或用上方選單切換。</span></div></li>
-    <li><b>2</b><div><strong>逐題比較</strong><span>左邊看題目，右邊看正解、每個模型的答案、對錯與成本。</span></div></li>
-    <li><b>3</b><div><strong>深入分析</strong><span>用「篩選 › 模型對照」找某模型答錯的題，點「完整回答」看推理過程。</span></div></li>
-  </ol>
   <div id="homeCards"></div>
 </section>
 <div class="demo" id="demoBar" hidden>找不到資料檔，目前顯示的是示範資料（自編題目、亂數對錯，非真實結果）。</div>
@@ -238,7 +300,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
 <main id="main">
   <section class="card" id="qCard">
     <div class="ch">
-      <h2 id="qNo"></h2>
+      <span class="sec">§1</span><h2 id="qNo"></h2>
       <span class="chip" id="qId"></span>
       <span class="chip b" id="qSubj"></span>
       <span class="chip" id="qDiff"></span>
@@ -257,7 +319,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
 
   <div class="side">
     <section class="card">
-      <div class="ch"><h2>正確答案</h2></div>
+      <div class="ch"><span class="sec">§2</span><h2>正確答案</h2></div>
       <div class="cb key" id="keyBox">
         <div class="big" id="gold"></div>
         <div>
@@ -271,7 +333,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
       </div>
     </section>
     <section class="card">
-      <div class="ch"><h2>各模型作答</h2><span class="mut" id="filtNote"></span></div>
+      <div class="ch"><span class="sec">§3</span><h2>各模型作答</h2><span class="mut" id="filtNote"></span></div>
       <div class="scroll">
       <table>
         <thead><tr><th>模型</th><th>作答</th><th>本題</th><th class="n costCol">本題成本<span class="info" tabindex="0" title="官方紀錄的這一題 API 費用（美元）。">ⓘ</span></th><th class="n costCol">成本倍數<span class="info" tabindex="0" title="本題成本 ÷ 本題最便宜模型的成本；最便宜的模型是 1×。">ⓘ</span></th><th class="hide-s">整體答對率<span class="info" tabindex="0" title="這個模型在目前篩選範圍內所有題目的平均得分。">ⓘ</span></th></tr></thead>
@@ -287,7 +349,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
   <div class="dh"><h3>題目總覽地圖</h3><button class="btn" data-close>關閉</button></div>
   <div class="db">
     <div class="legend"><span>每格一題，顏色為該題的模型平均得分，點一下跳到該題：</span>
-      <span><i style="background:#c63b30"></i>0%</span><span><i style="background:#e8a33a"></i>~33%</span><span><i style="background:#cdbf3c"></i>~66%</span><span><i style="background:#178a4c"></i>100%</span><span><i style="background:#9aa3ad"></i>無資料</span></div>
+      <span><i style="background:#efe9dd"></i>0%</span><span><i style="background:#aeaaa1"></i>33%</span><span><i style="background:#6e6b65"></i>66%</span><span><i style="background:#2b2a27"></i>100%</span><span><i style="background:repeating-linear-gradient(45deg,#c9c3b6 0 2px,transparent 2px 5px)"></i>無資料</span></div>
     <div class="grid" id="mapGrid"></div>
   </div>
 </dialog>
@@ -325,7 +387,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
     <p>把 LLM benchmark 的每一題、正確答案、每個模型的回答、對錯和花費放在同一頁，讓你逐題比較模型，並找出「便宜模型就答得對、不必用貴模型」的題目。</p>
     <h4>怎麼看一題</h4>
     <ul>
-      <li><b>左邊</b>：題目與選項，綠色是正確答案。開「中英對照」可以看中文翻譯。</li>
+      <li><b>左邊</b>：題目與選項，左側紅線標示的是正確答案。用工具列的「English／中文」切換顯示語言。</li>
       <li><b>右上</b>：正確答案、幾個模型答對，以及<b>最便宜的答對模型</b>。</li>
       <li><b>右下</b>：每個模型的答案、對錯與成本，依這題的成本由高到低排列；點「完整回答」看模型的完整推理。</li>
     </ul>
@@ -337,7 +399,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
       <dt>模型對照</dt><dd>在「篩選」裡選一個模型，只看它答錯但別的模型答對的題目。</dd>
       <dt>整體答對率</dt><dd>模型在目前篩選範圍內的平均得分，會隨篩選改變。</dd>
       <dt>正解來源</dt><dd>MMLU 用原版 MMLU 的官方答案；LLMRouterBench 用官方的 ground truth。</dd>
-      <dt>中英對照</dt><dd>機器翻譯，僅供參考；數學式與程式碼不翻譯。</dd>
+      <dt>English／中文</dt><dd>切換題目與完整回答的語言；中文為機器翻譯，僅供參考，數學式與程式碼不翻譯。</dd>
     </dl>
     <h4>快捷鍵</h4>
     <p><span class="kbd">←</span> <span class="kbd">→</span> 上一題／下一題　<span class="kbd">R</span> 隨機　<span class="kbd">/</span> 篩選與搜尋　<span class="kbd">?</span> 開啟說明　<span class="kbd">Esc</span> 關閉視窗</p>
@@ -347,7 +409,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
 </dialog>
 
 <dialog id="rawDlg">
-  <div class="dh"><div><h3 id="rawTitle"></h3><div class="mut" id="rawMeta"></div></div><button class="btn" data-close>關閉</button></div>
+  <div class="dh"><div><h3 id="rawTitle"></h3><div class="mut" id="rawMeta"></div></div><div class="row" style="gap:8px"><div class="seg" role="group" aria-label="顯示語言"><button data-lang="en" aria-pressed="true">English</button><button data-lang="zh" aria-pressed="false">中文</button></div><button class="btn" data-close>關閉</button></div></div>
   <div class="db" id="rawBody"></div>
 </dialog>
 
@@ -373,8 +435,8 @@ const short=m=>m.split('/').pop();
 const isNum=v=>typeof v==='number'&&isFinite(v);
 function fmtCost(c){if(!isNum(c))return'–';if(c===0)return'$0';if(c<0.0001)return'$'+c.toExponential(1);return'$'+(c<0.01?c.toPrecision(2):c<1?c.toFixed(4):c.toFixed(2))}
 function count(it){let c=0,n=0;for(const m of D.models){const v=it.results[m];if(isNum(v)){n++;c+=v}}return[c,n]}
-function color(f){if(f==null)return'#9aa3ad';const st=[[0,[198,59,48]],[.33,[232,163,58]],[.66,[205,191,60]],[1,[23,138,76]]];
-  for(let i=1;i<st.length;i++)if(f<=st[i][0]){const[a,ca]=st[i-1],[b,cb]=st[i];const t=(f-a)/(b-a);return`rgb(${ca.map((v,k)=>Math.round(v+(cb[k]-v)*t)).join(',')})`}return'#178a4c'}
+function color(f){if(f==null)return'repeating-linear-gradient(45deg,#c9c3b6 0 2px,transparent 2px 5px)';const a=[239,233,221],b=[43,42,39];return`rgb(${a.map((v,k)=>Math.round(v+(b[k]-v)*f)).join(',')})`}
+const inkOn=f=>f>0.5?'#f6f4ef':'#1b1b1a';
 
 /* ---------- formats ---------- */
 function normalize(d){
@@ -459,7 +521,7 @@ function render(){
   $('qNo').textContent=`第 ${pos+1} / ${view.length.toLocaleString()} 題`;
   $('qId').textContent=it.id;$('qSubj').textContent=it.subject||'未分類';
   const dl=f==null?'無資料':f===0?'無模型答對':f<=1/3?'難':f<2/3?'中':'易';
-  $('qDiff').textContent=`難度：${dl}`;$('qDiff').style.color=color(f);
+  $('qDiff').textContent=`難度：${dl}`;
   const P=parse(it.prompt);
   $('qText').innerHTML=texHTML(P.q);$('qTail').innerHTML=texHTML(P.tail);$('qRaw').textContent=it.prompt;
   const votes={};D.models.forEach(m=>{const k=it.picks[m];if(k&&k.length<=3)votes[k.trim()]=(votes[k.trim()]||0)+1});
@@ -498,7 +560,7 @@ const safeName=m=>String(m).replace(/[^A-Za-z0-9_.-]/g,'_');
 const chunkOf=id=>/^\d+$/.test(id)?String(Math.floor(+id/50)):'h'+([...id].reduce((a,c)=>a+c.codePointAt(0),0)%64);
 async function showRaw(m){
   const e=curEntry(),it=view[pos];if(!e?.raw||!it)return;
-  $('rawTitle').textContent=`${short(m)} 的完整回答`;$('rawTitle').dataset.k=m+'|'+it.id;$('rawMeta').textContent=`題目 ${it.id} · ${D.source||''}`;
+  lastRawM=m;$('rawTitle').textContent=`${short(m)} 的完整回答`;$('rawTitle').dataset.k=m+'|'+it.id;$('rawMeta').textContent=`題目 ${it.id} · ${D.source||''}`;
   $('rawBody').innerHTML='<p class="mut">載入中…</p>';$('rawDlg').showModal();
   const url=`${e.raw}/${safeName(m)}/${chunkOf(String(it.id))}.json`;
   try{if(!(url in rawCache)){const r=await fetch(url,{cache:'no-cache'});rawCache[url]=r.ok?await r.json():{}}
@@ -506,7 +568,6 @@ async function showRaw(m){
     if(!t){$('rawBody').innerHTML='<p class="mut">原始資料裡沒有這個模型在這一題的完整回答。</p>';return}
     const code=/LiveCodeBench|SWE-Bench|τ²/.test(D.source||'');
     $('rawMeta').textContent+=` · ${t.length.toLocaleString()} 字`;
-    $('rawDlg').classList.toggle('wide',BI&&!code);
     if(BI&&!code){rawBi(t,m,it.id);return}
     $('rawBody').innerHTML=(BI&&code?'<p class="mut">程式類資料集的回答多為程式碼，不提供翻譯。</p>':'')+(code?`<pre class="rawpre">${esc(t)}</pre>`:`<div class="rawtxt">${texHTML(t)}</div>`);
     if(!code)math($('rawBody'));
@@ -541,31 +602,34 @@ async function tr(text){
   trCache.set(text,res);return res}
 const provName=()=>trProv==='chrome'?'Chrome 內建翻譯':'Google 翻譯';
 async function renderBi(it){
-  const box=$('qZh');$('enHead').hidden=!BI;
+  const box=$('qZh');$('enHead').hidden=true;
   if(!BI){box.hidden=true;return}
-  box.hidden=false;const id=it.id;box.innerHTML='<p class="mut">翻譯中…</p>';
+  box.hidden=false;const id=it.id;box.innerHTML='<span class="mut">翻譯中…（暫時顯示原文）</span>';
   try{await trInit();const P=parse(it.prompt);
     const q=await tr(P.q);const ops=[];for(const o of P.opts)ops.push(await tr(o.t));const tail=P.tail?await tr(P.tail):'';
-    if(view[pos]?.id!==id)return;const gl=(it.gold||'').trim();
-    box.innerHTML=`<div class="bihead">中文（${provName()}，僅供參考）</div><div class="q">${texHTML(q)}</div>`+
-      (P.opts.length?`<ul class="opts">${P.opts.map((o,i)=>`<li class="${o.k===gl?'gold':''}"><b>${esc(o.k)}</b><span>${texHTML(asMath(ops[i]))}</span><small></small></li>`).join('')}</ul>`:'')+
-      (tail?`<div class="tail">${texHTML(tail)}</div>`:'');
-    math(box)}
-  catch(e){if(view[pos]?.id===id)box.innerHTML='<p class="mut">翻譯失敗：'+esc(e.message)+'</p>'}
+    if(view[pos]?.id!==id||!BI)return;
+    $('qText').innerHTML=texHTML(q);$('qTail').innerHTML=texHTML(tail);
+    $('qOpts').querySelectorAll('li>span').forEach((sp,i)=>{const tag=sp.querySelector('.chip');sp.innerHTML=texHTML(asMath(ops[i]??''))+(tag?' '+tag.outerHTML:'')});
+    math($('qText'));math($('qOpts'));math($('qTail'));
+    box.innerHTML=`<span class="mut">中文為${provName()}的機器翻譯，僅供參考；切換到 English 可看原文。</span>`}
+  catch(e){if(view[pos]?.id===id)box.innerHTML='<span class="mut">翻譯失敗，暫時顯示原文：'+esc(e.message)+'</span>'}
 }
 async function rawBi(t,m,id){
   const paras=t.split(/\n{2,}/);const body=$('rawBody');
-  body.innerHTML=`<div class="bicols"><div class="bihead">中文（翻譯中…）</div><div class="bihead">English 原文</div></div>`+paras.map((p,i)=>`<div class="birow"><div data-zh="${i}" class="mut">…</div><div>${texHTML(p)}</div></div>`).join('');
+  body.innerHTML=`<p class="mut" id="rawTrNote">翻譯中… 0／${paras.length} 段（未翻完的段落暫時顯示原文）</p><div class="rawtxt">${paras.map((p,i)=>`<div data-zh="${i}" class="pend">${texHTML(p)}</div>`).join('')}</div>`;
   math(body);
-  try{await trInit();body.querySelector('.bicols .bihead').textContent=`中文（${provName()}，僅供參考）`;
+  try{await trInit();
     for(let i=0;i<paras.length;i++){
-      if(!$('rawDlg').open||$('rawTitle').dataset.k!==m+'|'+id)return;
+      if(!$('rawDlg').open||!BI||$('rawTitle').dataset.k!==m+'|'+id)return;
       const z=await tr(paras[i]);const c=body.querySelector(`[data-zh="${i}"]`);if(!c)return;
-      c.className='';c.innerHTML=texHTML(z);math(c)}}
-  catch(e){body.querySelector('.bicols .bihead').textContent='中文（翻譯失敗：'+e.message+'）'}
+      c.className='';c.innerHTML=texHTML(z);math(c);$('rawTrNote').textContent=`翻譯中… ${i+1}／${paras.length} 段（未翻完的段落暫時顯示原文）`}
+    $('rawTrNote').textContent=`中文為${provName()}的機器翻譯，僅供參考；切換到 English 可看原文。`}
+  catch(e){$('rawTrNote').textContent='翻譯失敗，顯示原文：'+e.message}
 }
-$('biBtn').setAttribute('aria-pressed',String(BI));
-$('biBtn').onclick=()=>{BI=!BI;store.set('bi',BI);$('biBtn').setAttribute('aria-pressed',String(BI));if(BI)trInit();if(D)render()};
+let lastRawM=null;
+function setLang(l){BI=l==='zh';store.set('bi',BI);document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===l)));
+  if(BI)trInit();if(D)render();if($('rawDlg').open&&lastRawM)showRaw(lastRawM)}
+document.querySelectorAll('[data-lang]').forEach(b=>{b.setAttribute('aria-pressed',String((b.dataset.lang==='zh')===BI));b.onclick=()=>setLang(b.dataset.lang)});
 
 /* ---------- map ---------- */
 function buildMap(){
@@ -597,7 +661,7 @@ function drawScatter(){
   g+=`<polyline points="${front.map(p=>X(p.avg)+','+Y(p.a)).join(' ')}" fill="none" stroke="var(--mut)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
   const placed=[];
   pts.sort((a,b)=>b.a-a.a).forEach(p=>{const x=X(p.avg),y=Y(p.a);const onF=front.includes(p);
-    g+=`<circle cx="${x}" cy="${y}" r="${onF?6:5}" fill="${onF?'var(--ok)':'var(--blue)'}" stroke="var(--card)" stroke-width="2"><title>${esc(p.m)}：${(p.a*100).toFixed(1)}%，${fmtCost(p.avg)}/題</title></circle>`;
+    g+=`<circle cx="${x}" cy="${y}" r="${onF?6:5}" fill="${onF?'var(--acc)':'var(--ink)'}" stroke="var(--card)" stroke-width="2"><title>${esc(p.m)}：${(p.a*100).toFixed(1)}%，${fmtCost(p.avg)}/題</title></circle>`;
     let ly=y+4;while(placed.some(q=>Math.abs(q.y-ly)<13&&Math.abs(q.x-x)<110))ly+=13;placed.push({x,y:ly});
     const lab=narrow?short(p.m).slice(0,10):short(p.m);const right=x<W-R-10||!narrow;
     g+=`<text x="${x+9}" y="${ly}" ${right?'':'text-anchor="end"'}>${esc(lab)}</text>`});
@@ -613,12 +677,12 @@ function buildOv(){
   $('hmWrap').hidden=subs.length<2;
   if(subs.length>=2){const ms=acc.map(x=>x.m);
     const rows=subs.map(s=>{const L=view.filter(i=>(i.subject||'未分類')===s);const by=Object.fromEntries(accOver(L).map(x=>[x.m,x]));
-      return`<tr><td class="s">${esc(s)} <span class="mut">(${L.length})</span></td>${ms.map(m=>{const a=by[m].a;return`<td style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':'#fff'}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`}).join('');
+      return`<tr><td class="s">${esc(s)} <span class="mut">(${L.length})</span></td>${ms.map(m=>{const a=by[m].a;return`<td style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':inkOn(a)}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`}).join('');
     $('hm').innerHTML=`<thead><tr><th>科目（題數）</th>${ms.map(m=>`<th title="${esc(m)}">${esc(short(m).slice(0,14))}</th>`).join('')}</tr></thead><tbody>${rows}</tbody>`}
   const E=lrbEntries();const showAll=D.kind==='lrb'&&E.length>1;
   $('allWrap').hidden=!showAll;$('scAll').hidden=!(E.length>1);$('scAll').textContent=`${E.length} 個資料集平均`;
   if(showAll){const AV=allAvg().sort((a,b)=>(b.a??-1)-(a.a??-1));
-    $('allHm').innerHTML=`<thead><tr><th>資料集（題數）</th>${AV.map(x=>`<th title="${esc(x.m)}">${esc(short(x.m).slice(0,14))}</th>`).join('')}</tr></thead><tbody>${E.map(e=>`<tr><td class="s">${esc(e.name)} <span class="mut">(${e.n})</span></td>${AV.map(x=>{const s=e.summary[x.m];const a=s?.acc;return`<td title="${s?fmtCost(s.avgCost)+'/題':''}" style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':'#fff'}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`).join('')}<tr><td class="s"><b>平均</b></td>${AV.map(x=>`<td><b>${x.a==null?'–':Math.round(x.a*100)}</b></td>`).join('')}</tr><tr><td class="s"><b>平均每題成本</b></td>${AV.map(x=>`<td>${fmtCost(x.avg)}</td>`).join('')}</tr></tbody>`}
+    $('allHm').innerHTML=`<thead><tr><th>資料集（題數）</th>${AV.map(x=>`<th title="${esc(x.m)}">${esc(short(x.m).slice(0,14))}</th>`).join('')}</tr></thead><tbody>${E.map(e=>`<tr><td class="s">${esc(e.name)} <span class="mut">(${e.n})</span></td>${AV.map(x=>{const s=e.summary[x.m];const a=s?.acc;return`<td title="${s?fmtCost(s.avgCost)+'/題':''}" style="background:${a==null?'transparent':color(a)};color:${a==null?'inherit':inkOn(a)}">${a==null?'–':Math.round(a*100)}</td>`}).join('')}</tr>`).join('')}<tr><td class="s"><b>平均</b></td>${AV.map(x=>`<td><b>${x.a==null?'–':Math.round(x.a*100)}</b></td>`).join('')}</tr><tr><td class="s"><b>平均每題成本</b></td>${AV.map(x=>`<td>${fmtCost(x.avg)}</td>`).join('')}</tr></tbody>`}
   $('pcWrap').hidden=!D.hasCost;
   if(D.hasCost)requestAnimationFrame(drawScatter);
 }
@@ -693,14 +757,16 @@ function setCrumb(e){$('crumb').innerHTML=e?`<span class="sep">›</span><a href
 const pct=v=>v==null?'–':(v*100).toFixed(1)+'%';
 function renderHome(){
   const benches=[...new Set(MAN.datasets.map(d=>d.bench))];
-  const desc={RouterBench:'2023 年底的 11 個模型（GPT-4、Claude、Llama-2…）在 MMLU 上的逐題結果，正解取自原版 MMLU。',LLMRouterBench:'13 個旗艦模型（GPT-5、Claude-4、Gemini-2.5…）在 10 個資料集上的逐題結果，附每題 API 成本，適合研究效能與成本的取捨。'};
-  $('homeCards').innerHTML=benches.map(b=>{const key=Object.keys(desc).find(k=>b.startsWith(k));
-    return`<section class="bench"><h3>${esc(b)}</h3><p>${esc(desc[key]||'')}</p><div class="cards">${MAN.datasets.filter(d=>d.bench===b).map(d=>{
-      let extra='';if(d.summary){const S=Object.entries(d.summary).filter(([,v])=>v&&v.acc!=null);const best=S.sort((a,c)=>c[1].acc-a[1].acc)[0];const cheap=[...S].filter(([,v])=>v.avgCost!=null).sort((a,c)=>a[1].avgCost-c[1].avgCost)[0];
-        extra=`<dl><dt>最高答對率</dt><dd>${esc(short(best[0]))} · ${pct(best[1].acc)}</dd><dt>最省成本</dt><dd>${esc(short(cheap[0]))} · ${fmtCost(cheap[1].avgCost)}/題</dd></dl>`}
-      return`<button class="dcard" data-key="${esc(d.key)}"><h4>${esc(d.name)}</h4><span class="meta">${d.n?Number(d.n).toLocaleString()+' 題':''}${d.models?' · '+d.models+' 個模型':''}${d.hasCost?' · 含成本':''}</span>${extra}<span class="go">開始瀏覽 →</span></button>`}).join('')}</div></section>`}).join('');
+  const rows=benches.map(b=>`<tr><td class="grpc" colspan="6">${esc(b)}</td></tr>`+MAN.datasets.filter(d=>d.bench===b).map(d=>{
+    let best='—',cheap='—';
+    if(d.summary){const S=Object.entries(d.summary).filter(([,v])=>v&&v.acc!=null);const bb=[...S].sort((a,c)=>c[1].acc-a[1].acc)[0];const cc=S.filter(([,v])=>v.avgCost!=null).sort((a,c)=>a[1].avgCost-c[1].avgCost)[0];
+      if(bb)best=`${esc(short(bb[0]))}　<span class="num">${pct(bb[1].acc)}</span>`;if(cc)cheap=`${esc(short(cc[0]))}　<span class="num">${fmtCost(cc[1].avgCost)}</span>`}
+    return`<tr data-key="${esc(d.key)}" tabindex="0"><td>${esc(d.name)}</td><td class="n">${d.n?Number(d.n).toLocaleString():'—'}</td><td class="n">${d.models||'—'}</td><td>${best}</td><td>${cheap}</td><td class="n mut">開啟 →</td></tr>`}).join('')).join('');
+  $('homeCards').innerHTML=`<p class="cap"><b>表 1</b>　資料集一覽（點選任一列開啟）</p><div class="scroll"><table class="t1"><thead><tr><th>資料集</th><th class="n">題數</th><th class="n">模型數</th><th>最高答對率</th><th>最低平均成本（每題）</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="note2">註：答對率為各模型在該資料集的平均得分；成本為官方紀錄的每題 API 費用（美元）。RouterBench 未提供成本。資料由 GitHub Actions 自 HuggingFace 下載並轉檔。</p>`;
 }
-$('homeCards').addEventListener('click',e=>{const c=e.target.closest('.dcard');if(c)location.hash=c.dataset.key});
+$('homeCards').addEventListener('click',e=>{const r=e.target.closest('tr[data-key]');if(r)location.hash=r.dataset.key});
+$('homeCards').addEventListener('keydown',e=>{const r=e.target.closest('tr[data-key]');if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();location.hash=r.dataset.key}});
 $('brand').onclick=e=>{e.preventDefault();location.hash='home'};
 function toggleFilters(open){const o=open??$('filters').hidden;$('filters').hidden=!o;$('filtBtn').setAttribute('aria-expanded',String(o))}
 $('filtBtn').onclick=()=>toggleFilters();
