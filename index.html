@@ -183,7 +183,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
       <div class="ch"><h2>各模型作答</h2><span class="mut" id="filtNote"></span></div>
       <div class="scroll">
       <table>
-        <thead><tr><th>模型</th><th>作答</th><th>本題</th><th class="n costCol">本題成本</th><th class="hide-s">整體答對率（目前篩選）</th></tr></thead>
+        <thead><tr><th>模型</th><th>作答</th><th>本題</th><th class="n costCol">本題成本</th><th class="n costCol" title="本題成本 ÷ 本題最便宜模型的成本">成本倍數</th><th class="hide-s">整體答對率（目前篩選）</th></tr></thead>
         <tbody id="mBody"></tbody>
       </table>
       </div>
@@ -273,7 +273,7 @@ function setData(d){
   $('subjSel').hidden=subs.length<2;
   document.querySelectorAll('.costCol').forEach(e=>e.hidden=!D.hasCost);
   $('mNote').textContent=D.kind==='mmlu'?'模型依整體答對率排序。「作答」是從模型回覆中抽出的選項字母；整體答對率只計算有結果的題目。'
-    :'模型依整體答對率排序。「作答」是模型的最終答案（過長已截斷，點開看全文）；得分非 0/1 時顯示分數；成本為官方紀錄的該題 API 費用（美元）。';
+    :'模型依整體答對率排序。「作答」是模型的最終答案（過長已截斷，點開看全文）；得分非 0/1 時顯示分數；成本為官方紀錄的該題 API 費用（美元）；成本倍數 = 本題成本 ÷ 本題最便宜模型的成本（最便宜為 1×）。';
   applyFilter(true);
 }
 function applyFilter(reset){
@@ -348,10 +348,12 @@ function render(){
     $('cheap').hidden=false;
     $('cheap').innerHTML=ok.length?`最便宜的答對模型：<b>${esc(short(ok[0]))}</b>（${fmtCost(it.costs[ok[0]])}）；本題各模型成本 ${fmtCost(Math.min(...all))} – ${fmtCost(Math.max(...all))}`:'本題沒有模型拿到滿分，無法給出最便宜的答對模型。';
   }else $('cheap').hidden=true;
+  const pc=D.models.map(m=>it.costs[m]).filter(c=>isNum(c)&&c>0);const minC=pc.length?Math.min(...pc):null;
+  const fx=c=>{if(!isNum(c)||!minC)return'–';const r=c/minC;return r===1?'<b>1×</b>':(r<10?r.toFixed(1):Math.round(r).toLocaleString())+'×'};
   const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
   $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];
-    return`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
+    return`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
   math($('qText'));math($('qOpts'));math($('qTail'));math($('goldTxt'));math($('mBody'));
   if($('mapDlg').open)markMap();
 }
