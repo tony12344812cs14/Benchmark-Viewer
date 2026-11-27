@@ -111,6 +111,8 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 #q{min-width:180px}
 .q{overflow-wrap:anywhere}
 .loading{opacity:.55;pointer-events:none}
+tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';color:var(--bad);font-size:12px;font-weight:700}
+#focSel{max-width:320px}
 .katex-display{margin:.5em 0;overflow-x:auto;overflow-y:hidden;padding:2px 0}
 .katex{font-size:1.08em}
 .big .katex{font-size:.8em}
@@ -141,6 +143,7 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
       <option value="easy">易（≥ 2/3 答對）</option>
       <option value="all1">全部模型答對</option>
     </select>
+    <select id="focSel" aria-label="模型對照"></select>
     <input type="search" id="q" placeholder="搜尋題目 / ID" aria-label="搜尋">
   </div>
 </header>
@@ -271,13 +274,16 @@ function setData(d){
   const subs=[...new Set(D.items.map(i=>i.subject||'未分類'))].sort();
   $('subjSel').innerHTML='<option value="">全部科目（'+subs.length+'）</option>'+subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
   $('subjSel').hidden=subs.length<2;
+  const prevF=$('focSel').value||store.get('foc','');
+  $('focSel').innerHTML='<option value="">模型對照：不限</option>'+D.models.map(m=>`<option value="${esc(m)}">${esc(short(m))} 答錯、其他模型答對</option>`).join('');
+  $('focSel').value=D.models.includes(prevF)?prevF:'';
   document.querySelectorAll('.costCol').forEach(e=>e.hidden=!D.hasCost);
   $('mNote').textContent=D.kind==='mmlu'?'模型依整體答對率排序。「作答」是從模型回覆中抽出的選項字母；整體答對率只計算有結果的題目。'
     :'模型依整體答對率排序。「作答」是模型的最終答案（過長已截斷，點開看全文）；得分非 0/1 時顯示分數；成本為官方紀錄的該題 API 費用（美元）；成本倍數 = 本題成本 ÷ 本題最便宜模型的成本（最便宜為 1×）。';
   applyFilter(true);
 }
 function applyFilter(reset){
-  const sub=$('subjSel').value,df=$('diffSel').value,q=$('q').value.trim().toLowerCase();
+  const sub=$('subjSel').value,df=$('diffSel').value,q=$('q').value.trim().toLowerCase(),fm=$('focSel').value;
   const curId=view[pos]?.id;
   view=D.items.filter(it=>{
     if(sub&&(it.subject||'未分類')!==sub)return false;
@@ -285,6 +291,7 @@ function applyFilter(reset){
     if(df==='none'&&f!==0)return false;if(df==='all1'&&f!==1)return false;
     if(df==='hard'&&!(f!=null&&f<=1/3))return false;if(df==='mid'&&!(f!=null&&f>1/3&&f<2/3))return false;if(df==='easy'&&!(f!=null&&f>=2/3))return false;
     if(q&&!(String(it.prompt).toLowerCase().includes(q)||String(it.id).toLowerCase().includes(q)))return false;
+    if(fm){const v=it.results[fm];if(!(isNum(v)&&v<1))return false;if(!D.models.some(m=>m!==fm&&it.results[m]>=1))return false}
     return true});
   const keep=view.findIndex(it=>it.id===curId);
   pos=reset?Math.min(store.get('pos_'+(CUR||''),0),Math.max(view.length-1,0)):(keep>=0?keep:0);
@@ -353,7 +360,7 @@ function render(){
   const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
   $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];
-    return`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
+    return`<tr${m===$('focSel').value?' class="foc"':''}><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
   math($('qText'));math($('qOpts'));math($('qTail'));math($('goldTxt'));math($('mBody'));
   if($('mapDlg').open)markMap();
 }
@@ -444,7 +451,7 @@ $('prevBtn').onclick=()=>go(-1);$('nextBtn').onclick=()=>go(1);
 $('randBtn').onclick=()=>{if(view.length){pos=Math.floor(Math.random()*view.length);render()}};
 $('fsUp').onclick=()=>{fs=Math.min(24,fs+1);store.set('fs',fs);render()};
 $('fsDn').onclick=()=>{fs=Math.max(13,fs-1);store.set('fs',fs);render()};
-$('subjSel').onchange=()=>applyFilter(false);$('diffSel').onchange=()=>applyFilter(false);
+$('subjSel').onchange=()=>applyFilter(false);$('focSel').onchange=()=>{store.set('foc',$('focSel').value);applyFilter(false)};$('diffSel').onchange=()=>applyFilter(false);
 let qt;$('q').oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>applyFilter(false),200)};
 $('mapBtn').onclick=()=>{buildMap();$('mapDlg').showModal()};
 $('ovBtn').onclick=()=>{$('ovDlg').showModal();buildOv()};
