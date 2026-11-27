@@ -111,6 +111,11 @@ pre.cmd{background:var(--bg);border-radius:10px;padding:12px;overflow-x:auto;fon
 #q{min-width:180px}
 .q{overflow-wrap:anywhere}
 .loading{opacity:.55;pointer-events:none}
+.rawb{margin-top:4px;display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--blue);min-height:28px;white-space:nowrap}
+.rawb:hover{border-color:var(--blue)}
+.rawtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.75}
+.rawpre{white-space:pre-wrap;font-size:13px;margin:0}
+#rawDlg{width:min(980px,94vw)}
 tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';color:var(--bad);font-size:12px;font-weight:700}
 #focSel{max-width:320px}
 .katex-display{margin:.5em 0;overflow-x:auto;overflow-y:hidden;padding:2px 0}
@@ -228,6 +233,11 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
     <h3 style="margin:24px 0 8px;font-size:18px">資料來源</h3>
     <p class="mut">RouterBench MMLU：<code>withmartian/routerbench</code>（routerbench_0shot.pkl），正解取原版 MMLU（<code>cais/mmlu</code>），依選項文字對應到 RouterBench 打亂後的字母。LLMRouterBench：<code>NPULH/LLMRouterBench</code>（bench-release.tar.gz），依官方 <code>baseline_config_performance_cost.yaml</code> 取 10 個資料集 × 13 個模型，成本為官方紀錄的每題 API 費用（美元）。題目與作答過長時會截斷。</p>
   </div>
+</dialog>
+
+<dialog id="rawDlg">
+  <div class="dh"><div><h3 id="rawTitle"></h3><div class="mut" id="rawMeta"></div></div><button class="btn" data-close>關閉</button></div>
+  <div class="db" id="rawBody"></div>
 </dialog>
 
 <div class="drop" id="drop">放開以載入 JSON</div>
@@ -357,13 +367,35 @@ function render(){
   }else $('cheap').hidden=true;
   const pc=D.models.map(m=>it.costs[m]).filter(c=>isNum(c)&&c>0);const minC=pc.length?Math.min(...pc):null;
   const fx=c=>{if(!isNum(c)||!minC)return'–';const r=c/minC;return r===1?'<b>1×</b>':(r<10?r.toFixed(1):Math.round(r).toLocaleString())+'×'};
+  const hasRaw=!!curEntry()?.raw;
   const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
   $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];
-    return`<tr${m===$('focSel').value?' class="foc"':''}><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
+    return`<tr${m===$('focSel').value?' class="foc"':''}><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}${hasRaw?`<br><button class="rawb" data-m="${esc(m)}">完整回答</button>`:''}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
   math($('qText'));math($('qOpts'));math($('qTail'));math($('goldTxt'));math($('mBody'));
   if($('mapDlg').open)markMap();
 }
+
+/* ---------- full answers ---------- */
+const rawCache={};
+function curEntry(){return MAN?.datasets?.find(d=>d.key===CUR)}
+const safeName=m=>String(m).replace(/[^A-Za-z0-9_.-]/g,'_');
+const chunkOf=id=>/^\d+$/.test(id)?String(Math.floor(+id/50)):'h'+([...id].reduce((a,c)=>a+c.codePointAt(0),0)%64);
+async function showRaw(m){
+  const e=curEntry(),it=view[pos];if(!e?.raw||!it)return;
+  $('rawTitle').textContent=`${short(m)} 的完整回答`;$('rawMeta').textContent=`題目 ${it.id} · ${D.source||''}`;
+  $('rawBody').innerHTML='<p class="mut">載入中…</p>';$('rawDlg').showModal();
+  const url=`${e.raw}/${safeName(m)}/${chunkOf(String(it.id))}.json`;
+  try{if(!(url in rawCache)){const r=await fetch(url,{cache:'no-cache'});rawCache[url]=r.ok?await r.json():{}}
+    const t=rawCache[url][String(it.id)];
+    if(!t){$('rawBody').innerHTML='<p class="mut">原始資料裡沒有這個模型在這一題的完整回答。</p>';return}
+    const code=/LiveCodeBench|SWE-Bench|τ²/.test(D.source||'');
+    $('rawBody').innerHTML=code?`<pre class="rawpre">${esc(t)}</pre>`:`<div class="rawtxt">${texHTML(t)}</div>`;
+    if(!code)math($('rawBody'));
+    $('rawMeta').textContent+=` · ${t.length.toLocaleString()} 字`;
+  }catch(err){$('rawBody').innerHTML='<p class="mut">載入失敗：'+esc(err.message)+'</p>'}
+}
+$('mBody').addEventListener('click',e=>{const b=e.target.closest('.rawb');if(b)showRaw(b.dataset.m)});
 
 /* ---------- map ---------- */
 function buildMap(){
