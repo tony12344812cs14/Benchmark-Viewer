@@ -228,6 +228,17 @@ details.raw summary{color:var(--ink)}
 .t1 th{text-align:left}.t1 th.n,.t1 td.n{text-align:right}
 .t1 tbody tr{cursor:pointer}.t1 tbody tr:hover td,.t1 tbody tr:focus-visible td{background:var(--blueb);outline:none}
 .t1 td.grpc{font-size:12px;color:var(--mut);padding-top:14px;cursor:default;background:transparent!important}
+.mlink{all:unset;cursor:pointer;font:inherit;font-weight:500;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.mlink:hover,.mlink:focus-visible{border-bottom-color:var(--ink);outline:none}
+dialog#mDlg{margin:0 0 0 auto;height:100vh;max-height:100vh;width:min(420px,100vw);max-width:100vw;border:0;border-left:1.5px solid var(--ink);border-radius:0}
+#mDlg .db{padding:18px 22px 28px;overflow:auto}
+#mDlg .mst{color:var(--acc);font-size:13px;margin:0 0 10px}
+#mDlg .mdesc{font-family:var(--serif);font-size:15.5px;line-height:1.8;margin:0 0 18px}
+#mDlg dl.kv{display:grid;grid-template-columns:7em 1fr;gap:6px 12px;margin:0 0 20px;padding:10px 0;border-top:.5px solid var(--line);border-bottom:.5px solid var(--line);font-size:14px}
+#mDlg dl.kv dt{color:var(--mut)}#mDlg dl.kv dd{margin:0}
+#mDlg h4{font-size:13px;font-weight:600;margin:18px 0 6px;font-family:inherit}
+#mDlg ol.src{margin:0;padding-left:1.4em;font-size:14px;line-height:1.9}#mDlg ol.src a{color:var(--ink);text-underline-offset:3px}
+#mDlg table{width:100%;font-size:13.5px}#mDlg .foot{font-size:12px;color:var(--mut);margin-top:22px}
+.t1 .ext{display:block;color:var(--ink);text-underline-offset:3px;white-space:nowrap}.t1 td{vertical-align:top}.t1 th,.t1 td:nth-child(3),.t1 td:nth-child(4){white-space:nowrap}
 .note2{font-size:12.5px;color:var(--mut);margin:8px 0 0;max-width:80ch}
 .rawb{margin-top:4px;display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--blue);min-height:28px;white-space:nowrap}
 .rawb:hover{border-color:var(--blue)}
@@ -393,6 +404,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
     </ul>
     <h4>名詞解釋</h4>
     <dl>
+      <dt>模型名稱</dt><dd>點表格中的模型名稱，右側會打開模型簡介：開發者、發布時間、參數量，以及 model card、技術報告等官方連結。</dd>
       <dt>難度</dt><dd>依答對的模型比例分級：難 ≤ 1/3、中 1/3–2/3、易 ≥ 2/3。</dd>
       <dt>本題成本</dt><dd>官方紀錄的這一題 API 費用（美元）。</dd>
       <dt>成本倍數</dt><dd>本題成本 ÷ 這題最便宜模型的成本，最便宜為 1×。</dd>
@@ -408,6 +420,7 @@ tr.foc td{background:var(--badb)}tr.foc .mname::after{content:' ◀ 對照';colo
   </div>
 </dialog>
 
+<dialog id="mDlg" aria-labelledby="mTitle"><div class="dh"><div><h3 id="mTitle"></h3><div class="mut" id="mOrg"></div></div><button class="btn" data-close>關閉</button></div><div class="db" id="mBodyInfo"></div></dialog>
 <dialog id="rawDlg">
   <div class="dh"><div><h3 id="rawTitle"></h3><div class="mut" id="rawMeta"></div></div><div class="row" style="gap:8px"><div class="seg" role="group" aria-label="顯示語言"><button data-lang="en" aria-pressed="true">English</button><button data-lang="zh" aria-pressed="false">中文</button></div><button class="btn" data-close>關閉</button></div></div>
   <div class="db" id="rawBody"></div>
@@ -547,7 +560,7 @@ function render(){
   if(D.hasCost)acc.sort((a,b)=>cv(b.m)-cv(a.m));else acc.sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('filtNote').textContent=`整體率依目前 ${view.length.toLocaleString()} 題計算`;
   $('mBody').innerHTML=acc.map(({m,a})=>{const v=it.results[m];
-    return`<tr${m===$('focSel').value?' class="foc"':''}><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="pred">${predCell(it.picks[m])}${hasRaw?`<br><button class="rawb" data-m="${esc(m)}">完整回答</button>`:''}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
+    return`<tr${m===$('focSel').value?' class="foc"':''}><td class="mname">${mlink(m)}</td><td class="pred">${predCell(it.picks[m])}${hasRaw?`<br><button class="rawb" data-m="${esc(m)}">完整回答</button>`:''}</td><td>${mark(v)}</td>${D.hasCost?`<td class="n">${fmtCost(it.costs[m])}</td><td class="n">${fx(it.costs[m])}</td>`:''}<td class="hide-s"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td></tr>`}).join('');
   math($('qText'));math($('qOpts'));math($('qTail'));math($('goldTxt'));math($('mBody'));
   renderBi(it);
   if($('mapDlg').open)markMap();
@@ -672,7 +685,7 @@ function buildOv(){
   const acc=accOver(view).sort((a,b)=>(b.a??-1)-(a.a??-1));
   $('ovNote').textContent=`依目前篩選的 ${view.length.toLocaleString()} 題計算。資料：${D.source||'自訂'}${D.demo?'（示範用亂數）':''}。`;
   $('ovHead').innerHTML=`<tr><th>模型</th><th class="n">得分 / 有效題數</th><th>答對率</th>${D.hasCost?'<th class="n">平均每題成本</th><th class="n">總成本</th>':''}</tr>`;
-  $('ovBody').innerHTML=acc.map(({m,c,n,a,avg,cost})=>`<tr><td class="mname" title="${esc(m)}">${esc(short(m))}</td><td class="n">${(+c.toFixed(2)).toLocaleString()} / ${n.toLocaleString()}</td><td style="min-width:180px"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td>${D.hasCost?`<td class="n">${fmtCost(avg)}</td><td class="n">${fmtCost(cost)}</td>`:''}</tr>`).join('');
+  $('ovBody').innerHTML=acc.map(({m,c,n,a,avg,cost})=>`<tr><td class="mname">${mlink(m)}</td><td class="n">${(+c.toFixed(2)).toLocaleString()} / ${n.toLocaleString()}</td><td style="min-width:180px"><div class="hb"><span><i style="width:${a==null?0:a*100}%"></i></span><b class="n">${a==null?'–':(a*100).toFixed(1)+'%'}</b></div></td>${D.hasCost?`<td class="n">${fmtCost(avg)}</td><td class="n">${fmtCost(cost)}</td>`:''}</tr>`).join('');
   const subs=[...new Set(view.map(i=>i.subject||'未分類'))].sort();
   $('hmWrap').hidden=subs.length<2;
   if(subs.length>=2){const ms=acc.map(x=>x.m);
@@ -708,7 +721,7 @@ async function init(){
   if(!MAN){$('dsSel').innerHTML='<option>示範資料</option>';setData(demo());return}
   const benches=[...new Set(MAN.datasets.map(d=>d.bench))];
   $('dsSel').innerHTML=benches.map(b=>`<optgroup label="${esc(b)}">${MAN.datasets.filter(d=>d.bench===b).map(d=>`<option value="${esc(d.key)}">${esc(d.name)}${d.n?`（${Number(d.n).toLocaleString()} 題）`:''}</option>`).join('')}</optgroup>`).join('');
-  renderHome();route();
+  await loadMI();renderHome();route();
 }
 function parseHash(){const h=decodeURIComponent(location.hash.slice(1));const i=h.indexOf('~');return i<0?[h,null]:[h.slice(0,i),h.slice(i+1)]}
 function route(){const[k,id]=parseHash();
@@ -755,6 +768,28 @@ function showView(v){const home=v==='home';$('home').hidden=!home;$('main').hidd
   if(home){$('filters').hidden=true;$('chips').hidden=true}document.title=home?'LLM Benchmark 逐題瀏覽':`${curEntry()?.name||''} · LLM Benchmark 逐題瀏覽`}
 function setCrumb(e){$('crumb').innerHTML=e?`<span class="sep">›</span><a href="#home">首頁</a><span class="sep">›</span><span>${esc(e.bench.replace(/（.*）/,''))}</span><span class="sep">›</span><strong>${esc(e.name)}</strong>`:'<span class="sep">›</span><strong>首頁</strong>'}
 const pct=v=>v==null?'–':(v*100).toFixed(1)+'%';
+let MI={};
+async function loadMI(){try{const r=await fetch('models.json',{cache:'no-cache'});if(r.ok)MI=(await r.json()).models||{}}catch(e){}}
+const ext=(u,l)=>`<a class="ext" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(l)} ↗</a>`;
+function mlink(m){const i=MI[m];if(!i)return`<span title="${esc(m)}">${esc(short(m))}</span>`;
+  return`<button class="mlink" data-model="${esc(m)}" title="${esc([i.org,i.released,i.type].filter(Boolean).join(' · '))}（點選看簡介）">${esc(short(m))}</button>`}
+function modelAcc(m){return(MAN?.datasets||[]).filter(d=>d.summary&&d.summary[m]&&d.summary[m].acc!=null).map(d=>[d.name,d.summary[m]])}
+function openModel(m){const i=MI[m];if(!i)return;const na='<span class="mut">未公開</span>';
+  $('mTitle').textContent=i.name;$('mOrg').textContent=`${i.org}　·　資料中的名稱：${m}`;
+  const acc=modelAcc(m);
+  $('mBodyInfo').innerHTML=`${i.status?`<p class="mst">${esc(i.status)}</p>`:''}<p class="mdesc">${esc(i.desc)}</p>
+  <dl class="kv"><dt>發布</dt><dd>${esc(i.released||'')||na}</dd><dt>類型</dt><dd>${esc(i.type||'')||na}</dd><dt>參數量</dt><dd>${i.params?esc(i.params):na}</dd><dt>Context</dt><dd>${i.context?esc(i.context)+' tokens':na}</dd><dt>思考型</dt><dd>${i.reasoning?'是（會先推理再作答）':'否'}</dd></dl>
+  <h4>官方資料與連結</h4><ol class="src">${i.links.map(x=>`<li>${ext(x.url,x.label)}</li>`).join('')}</ol>
+  ${acc.length?`<h4>在本站各資料集的表現</h4><table><thead><tr><th>資料集</th><th class="n">答對率</th><th class="n">平均成本／題</th></tr></thead><tbody>${acc.map(([n,s])=>`<tr><td>${esc(n)}</td><td class="n">${pct(s.acc)}</td><td class="n">${s.avgCost!=null?fmtCost(s.avgCost):'—'}</td></tr>`).join('')}</tbody></table>`:''}
+  <p class="foot">資料查核日期：${esc(i.checked)}。簡介為本站依官方文件整理，若有出入以官方文件為準；「未公開」表示官方未公布或本站未能查證。</p>`;
+  if(!$('mDlg').open)$('mDlg').showModal()}
+document.addEventListener('click',e=>{const b=e.target.closest('.mlink');if(b){e.preventDefault();openModel(b.dataset.model)}});
+function renderModelTable(){
+  const K=Object.keys(MI);const groups=[['RouterBench（MMLU）',K.filter(m=>MI[m].bench==='RouterBench')],['LLMRouterBench',K.filter(m=>MI[m].bench==='LLMRouterBench')]];
+  const rows=groups.map(([g,ms])=>`<tr><td class="grpc" colspan="7">${esc(g)}（${ms.length} 個模型）</td></tr>`+ms.filter(m=>MI[m]).map(m=>{const i=MI[m];const a=modelAcc(m);const avg=a.length?a.reduce((s,[,v])=>s+v.acc,0)/a.length:null;
+    return`<tr data-model="${esc(m)}" tabindex="0"><td>${esc(i.name)}${i.status?' <span class="mut">†</span>':''}</td><td>${esc(i.org)}</td><td class="n">${esc(i.released)}</td><td>${esc(i.type)}</td><td>${i.reasoning?'✓':''}</td><td class="n">${avg==null?'—':pct(avg)}</td><td>${i.links.slice(0,2).map(x=>ext(x.url,x.label.replace(/（.*$/,''))).join('')}</td></tr>`}).join('')).join('');
+  return`<p class="cap" style="margin-top:36px"><b>表 2</b>　模型一覽（點選任一列看簡介）</p><div class="scroll"><table class="t1"><thead><tr><th>模型</th><th>開發者</th><th class="n">發布</th><th>類型</th><th>思考型</th><th class="n">平均答對率</th><th>主要來源</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="note2">註：平均答對率為該模型在 LLMRouterBench 10 個資料集答對率的簡單平均；RouterBench 模型只有 MMLU，答對率請見資料集頁。† 表示官方已停用或公告退役。各模型完整資料見簡介中的連結。</p>`}
 function renderHome(){
   const benches=[...new Set(MAN.datasets.map(d=>d.bench))];
   const rows=benches.map(b=>`<tr><td class="grpc" colspan="6">${esc(b)}</td></tr>`+MAN.datasets.filter(d=>d.bench===b).map(d=>{
@@ -763,10 +798,10 @@ function renderHome(){
       if(bb)best=`${esc(short(bb[0]))}　<span class="num">${pct(bb[1].acc)}</span>`;if(cc)cheap=`${esc(short(cc[0]))}　<span class="num">${fmtCost(cc[1].avgCost)}</span>`}
     return`<tr data-key="${esc(d.key)}" tabindex="0"><td>${esc(d.name)}</td><td class="n">${d.n?Number(d.n).toLocaleString():'—'}</td><td class="n">${d.models||'—'}</td><td>${best}</td><td>${cheap}</td><td class="n mut">開啟 →</td></tr>`}).join('')).join('');
   $('homeCards').innerHTML=`<p class="cap"><b>表 1</b>　資料集一覽（點選任一列開啟）</p><div class="scroll"><table class="t1"><thead><tr><th>資料集</th><th class="n">題數</th><th class="n">模型數</th><th>最高答對率</th><th>最低平均成本（每題）</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
-  <p class="note2">註：答對率為各模型在該資料集的平均得分；成本為官方紀錄的每題 API 費用（美元）。RouterBench 未提供成本。資料由 GitHub Actions 自 HuggingFace 下載並轉檔。</p>`;
+  <p class="note2">註：答對率為各模型在該資料集的平均得分；成本為官方紀錄的每題 API 費用（美元）。RouterBench 未提供成本。資料由 GitHub Actions 自 HuggingFace 下載並轉檔。</p>`+renderModelTable();
 }
-$('homeCards').addEventListener('click',e=>{const r=e.target.closest('tr[data-key]');if(r)location.hash=r.dataset.key});
-$('homeCards').addEventListener('keydown',e=>{const r=e.target.closest('tr[data-key]');if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();location.hash=r.dataset.key}});
+$('homeCards').addEventListener('click',e=>{if(e.target.closest('a'))return;const mr=e.target.closest('tr[data-model]');if(mr){openModel(mr.dataset.model);return}const r=e.target.closest('tr[data-key]');if(r)location.hash=r.dataset.key});
+$('homeCards').addEventListener('keydown',e=>{if(e.target.closest('a')||!(e.key==='Enter'||e.key===' '))return;const mr=e.target.closest('tr[data-model]');if(mr){e.preventDefault();openModel(mr.dataset.model);return}const r=e.target.closest('tr[data-key]');if(r){e.preventDefault();location.hash=r.dataset.key}});
 $('brand').onclick=e=>{e.preventDefault();location.hash='home'};
 function toggleFilters(open){const o=open??$('filters').hidden;$('filters').hidden=!o;$('filtBtn').setAttribute('aria-expanded',String(o))}
 $('filtBtn').onclick=()=>toggleFilters();
