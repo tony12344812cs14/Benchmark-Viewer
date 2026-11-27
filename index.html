@@ -396,7 +396,7 @@ async function loadKey(key){
   const e=MAN.datasets.find(d=>d.key===key)||MAN.datasets[0];CUR=e.key;
   $('dsSel').value=e.key;store.set('ds',e.key);if(location.hash!=='#'+e.key)history.replaceState(null,'','#'+e.key);
   $('main').classList.add('loading');$('sizeChip').textContent='載入中…';
-  try{if(!cache[e.key]){const r=await fetch(e.file);if(!r.ok)throw new Error(r.status);cache[e.key]=await r.json()}
+  try{if(!cache[e.key]){const r=await fetch(e.file,{cache:'no-cache'});if(!r.ok)throw new Error(r.status);cache[e.key]=await r.json()}
     $('subjSel').value='';$('diffSel').value='all';$('q').value='';setData(cache[e.key])}
   catch(err){$('sizeChip').textContent='載入失敗：'+err.message}
   $('main').classList.remove('loading');
